@@ -1,0 +1,1 @@
+-- Health data schema for activity tracking

@@ -1,0 +1,1 @@
+-- Core schema for activity tracking data
