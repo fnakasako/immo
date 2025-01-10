@@ -1,0 +1,47 @@
+{
+    "metrics": [
+        {
+            "metric_type": "heart_rate",
+            "values": [
+                {
+                    "timestamp": 1672531200000,
+                    "value": 72.5,
+                    "unit": "bpm",
+                    "source_device": "apple_watch",
+                    "accuracy": 95
+                },
+                {
+                    "timestamp": 1672531500000,
+                    "value": 75.0,
+                    "unit": "bpm",
+                    "source_device": "apple_watch",
+                    "accuracy": 95
+                }
+            ]
+        },
+        {
+            "metric_type": "steps",
+            "values": [
+                {
+                    "timestamp": 1672531200000,
+                    "value": 8500,
+                    "unit": "count",
+                    "source_device": "iphone",
+                    "accuracy": 90
+                }
+            ]
+        },
+        {
+            "metric_type": "blood_oxygen",
+            "values": [
+                {
+                    "timestamp": 1672531200000,
+                    "value": 98.5,
+                    "unit": "percentage",
+                    "source_device": "apple_watch",
+                    "accuracy": 95
+                }
+            ]
+        }
+    ]
+}

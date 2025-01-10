@@ -1,0 +1,63 @@
+{
+    "workouts": [
+        {
+            "workout_type": "running",
+            "start_time": 1672531200000,
+            "end_time": 1672534800000,
+            "distance": 5000.0,
+            "calories": 450.0,
+            "avg_heart_rate": 155.0,
+            "max_heart_rate": 175.0,
+            "metadata": {
+                "route_type": "outdoor",
+                "weather": "sunny",
+                "temperature": 22.5,
+                "elevation_gain": 45.0,
+                "splits": [
+                    {"km": 1, "pace": "5:30"},
+                    {"km": 2, "pace": "5:25"},
+                    {"km": 3, "pace": "5:35"},
+                    {"km": 4, "pace": "5:40"},
+                    {"km": 5, "pace": "5:20"}
+                ]
+            }
+        },
+        {
+            "workout_type": "cycling",
+            "start_time": 1672617600000,
+            "end_time": 1672624800000,
+            "distance": 25000.0,
+            "calories": 750.0,
+            "avg_heart_rate": 145.0,
+            "max_heart_rate": 165.0,
+            "metadata": {
+                "route_type": "outdoor",
+                "weather": "cloudy",
+                "temperature": 18.0,
+                "elevation_gain": 350.0,
+                "avg_cadence": 85,
+                "bike_type": "road"
+            }
+        },
+        {
+            "workout_type": "swimming",
+            "start_time": 1672704000000,
+            "end_time": 1672707600000,
+            "distance": 2000.0,
+            "calories": 400.0,
+            "avg_heart_rate": 135.0,
+            "max_heart_rate": 155.0,
+            "metadata": {
+                "pool_length": 25,
+                "stroke_type": "freestyle",
+                "laps": 80,
+                "avg_strokes_per_lap": 20,
+                "rest_intervals": [
+                    {"after_lap": 20, "duration": 30},
+                    {"after_lap": 40, "duration": 30},
+                    {"after_lap": 60, "duration": 30}
+                ]
+            }
+        }
+    ]
+}

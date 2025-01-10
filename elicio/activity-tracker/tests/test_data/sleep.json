@@ -1,0 +1,88 @@
+{
+    "sleep_records": [
+        {
+            "start_time": 1672531200000,
+            "end_time": 1672560000000,
+            "quality": "deep",
+            "duration": 480,
+            "interruptions": 2,
+            "metadata": {
+                "sleep_score": 85,
+                "stages": [
+                    {
+                        "type": "light",
+                        "duration": 90,
+                        "start_offset": 0
+                    },
+                    {
+                        "type": "deep",
+                        "duration": 180,
+                        "start_offset": 90
+                    },
+                    {
+                        "type": "rem",
+                        "duration": 120,
+                        "start_offset": 270
+                    },
+                    {
+                        "type": "light",
+                        "duration": 90,
+                        "start_offset": 390
+                    }
+                ],
+                "environment": {
+                    "temperature": 20.5,
+                    "noise_level": "low",
+                    "light_level": "dark"
+                },
+                "heart_rate": {
+                    "avg": 62,
+                    "min": 55,
+                    "max": 68
+                }
+            }
+        },
+        {
+            "start_time": 1672617600000,
+            "end_time": 1672646400000,
+            "quality": "light",
+            "duration": 420,
+            "interruptions": 3,
+            "metadata": {
+                "sleep_score": 75,
+                "stages": [
+                    {
+                        "type": "light",
+                        "duration": 120,
+                        "start_offset": 0
+                    },
+                    {
+                        "type": "deep",
+                        "duration": 120,
+                        "start_offset": 120
+                    },
+                    {
+                        "type": "rem",
+                        "duration": 90,
+                        "start_offset": 240
+                    },
+                    {
+                        "type": "light",
+                        "duration": 90,
+                        "start_offset": 330
+                    }
+                ],
+                "environment": {
+                    "temperature": 21.0,
+                    "noise_level": "medium",
+                    "light_level": "dim"
+                },
+                "heart_rate": {
+                    "avg": 65,
+                    "min": 58,
+                    "max": 72
+                }
+            }
+        }
+    ]
+}
