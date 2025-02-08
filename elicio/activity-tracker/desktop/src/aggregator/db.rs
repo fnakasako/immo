@@ -3,7 +3,6 @@ use rusqlite::Connection;
 use std::path::Path;
 use tracing::info;
 
-// Initialize database with encryption and run migrations
 pub(crate) fn init_database(db_path: &str, encryption_key: &str) -> Result<Connection> {
     let is_new_db = !Path::new(db_path).exists();
     
@@ -11,13 +10,15 @@ pub(crate) fn init_database(db_path: &str, encryption_key: &str) -> Result<Conne
     let conn = Connection::open(db_path)
         .context("Failed to open database")?;
 
-    // Configure encryption
+    // Configure encryption and performance settings
     conn.execute_batch(&format!(
         "PRAGMA key = '{}';
          PRAGMA cipher_page_size = 4096;
          PRAGMA kdf_iter = 64000;
          PRAGMA journal_mode = WAL;
-         PRAGMA synchronous = NORMAL;",
+         PRAGMA synchronous = NORMAL;
+         PRAGMA cache_size = -2000;  -- Reserve 2MB for cache
+         PRAGMA temp_store = MEMORY; -- Use memory for temp storage",
         encryption_key
     )).context("Failed to configure encryption")?;
 
@@ -32,32 +33,35 @@ pub(crate) fn init_database(db_path: &str, encryption_key: &str) -> Result<Conne
     Ok(conn)
 }
 
-// Run database migrations
 fn run_migrations(conn: &Connection) -> Result<()> {
-    // Start transaction for atomic migration
     let tx = conn.transaction()?;
 
-    // Create migrations table if it doesn't exist
+    // Create migrations table
     tx.execute(
         "CREATE TABLE IF NOT EXISTS schema_migrations (
             version INTEGER PRIMARY KEY,
-            applied_at INTEGER NOT NULL
+            applied_at INTEGER NOT NULL,
+            description TEXT,
+            checksum TEXT
         )",
         [],
     )?;
 
-    // Read and execute migration files
-    let migration_sql = include_str!("../../../db/migrations/001_initial.sql");
-    tx.execute_batch(migration_sql)?;
+    // Run core schema migrations
+    let core_sql = include_str!("../../../db/migrations/001_initial.sql");
+    tx.execute_batch(core_sql)?;
+
+    // Run text aggregation schema migrations
+    let text_sql = include_str!("../../../db/migrations/002_text_aggregation.sql");
+    tx.execute_batch(text_sql)?;
 
     tx.commit()?;
     info!("Database migrations completed successfully");
     Ok(())
 }
 
-// Verify database schema matches expected structure
 fn verify_schema(conn: &Connection) -> Result<()> {
-    // Check core tables exist
+    // Verify core tables
     let core_tables = [
         "events",
         "retention_policies",
@@ -65,40 +69,37 @@ fn verify_schema(conn: &Connection) -> Result<()> {
         "event_statistics",
     ];
 
-    for table in core_tables.iter() {
-        conn.query_row(
-            "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
-            [table],
-            |_| Ok(()),
-        ).context(format!("Core table '{}' not found", table))?;
-    }
-
-    // Check health tables exist
-    let health_tables = [
-        "health_metrics",
-        "workouts",
-        "sleep_sessions",
+    // Verify text aggregation tables
+    let text_tables = [
+        "text_captures",
+        "text_summaries",
+        "application_context",
+        "content_relationships",
+        "text_statistics"
     ];
 
-    for table in health_tables.iter() {
+    // Combined verification
+    for table in core_tables.iter().chain(text_tables.iter()) {
         conn.query_row(
             "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
             [table],
             |_| Ok(()),
-        ).context(format!("Health table '{}' not found", table))?;
+        ).context(format!("Table '{}' not found", table))?;
     }
 
-    // Verify indexes exist
+    // Verify required indexes
     let required_indexes = [
+        // Core indexes
         "idx_events_timestamp",
         "idx_events_source_type",
         "idx_events_partition",
-        "idx_health_metrics_event",
-        "idx_health_metrics_type_time",
-        "idx_workouts_event",
-        "idx_workouts_type_time",
-        "idx_sleep_sessions_event",
-        "idx_sleep_sessions_time",
+        // Text capture indexes
+        "idx_text_captures_timestamp",
+        "idx_text_captures_app",
+        "idx_text_captures_type",
+        "idx_text_summaries_capture",
+        "idx_content_relationships_source",
+        "idx_content_relationships_target"
     ];
 
     for index in required_indexes.iter() {
@@ -109,11 +110,14 @@ fn verify_schema(conn: &Connection) -> Result<()> {
         ).context(format!("Required index '{}' not found", index))?;
     }
 
-    // Verify views exist
+    // Verify views
     let required_views = [
+        // Core views
         "v_daily_activity",
-        "v_daily_health_metrics",
-        "v_workout_summary",
+        // Text aggregation views
+        "v_text_activity_summary",
+        "v_application_usage",
+        "v_content_connections"
     ];
 
     for view in required_views.iter() {
@@ -122,6 +126,21 @@ fn verify_schema(conn: &Connection) -> Result<()> {
             [view],
             |_| Ok(()),
         ).context(format!("Required view '{}' not found", view))?;
+    }
+
+    // Verify text-specific triggers exist
+    let required_triggers = [
+        "trg_text_capture_stats",
+        "trg_summary_update",
+        "trg_relationship_cleanup"
+    ];
+
+    for trigger in required_triggers.iter() {
+        conn.query_row(
+            "SELECT 1 FROM sqlite_master WHERE type='trigger' AND name=?",
+            [trigger],
+            |_| Ok(()),
+        ).context(format!("Required trigger '{}' not found", trigger))?;
     }
 
     info!("Database schema verification completed successfully");
@@ -143,14 +162,53 @@ mod tests {
             "test-key",
         )?;
 
-        // Verify we can query the database
+        // Verify text capture tables
+        let tables = [
+            "text_captures",
+            "text_summaries",
+            "application_context"
+        ];
+
+        for table in tables.iter() {
+            conn.query_row(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+                [table],
+                |_| Ok(()),
+            )?;
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_text_capture_insertion() -> Result<()> {
+        let dir = tempdir()?;
+        let db_path = dir.path().join("test.db");
+        let conn = init_database(db_path.to_str().unwrap(), "test-key")?;
+
+        conn.execute(
+            "INSERT INTO text_captures (
+                text, app_name, window_title, timestamp,
+                text_type, context, summary
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            params![
+                "Test text",
+                "test_app",
+                "Test Window",
+                chrono::Utc::now().timestamp_millis(),
+                "input",
+                "{}",
+                None::<String>,
+            ],
+        )?;
+
         let count: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM event_types",
+            "SELECT COUNT(*) FROM text_captures",
             [],
             |row| row.get(0),
         )?;
 
-        assert_eq!(count, 4); // 4 pre-defined health event types
+        assert_eq!(count, 1);
         Ok(())
     }
 }

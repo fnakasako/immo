@@ -62,6 +62,110 @@ CREATE TABLE IF NOT EXISTS event_statistics (
     UNIQUE(date, source, event_type)
 );
 
+-- 1. Privacy and Encryption Management
+CREATE TABLE IF NOT EXISTS encryption_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key_id TEXT NOT NULL UNIQUE,
+    key_type TEXT NOT NULL,  -- 'master', 'rotation', 'sharing'
+    encryption_algorithm TEXT NOT NULL,
+    key_material BLOB NOT NULL,  -- Encrypted key material
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER,
+    metadata TEXT,  -- JSON for additional properties
+    UNIQUE(key_id, key_type)
+);
+
+-- 2. Data Sharing and Marketplace Support
+CREATE TABLE IF NOT EXISTS data_packages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    package_id TEXT NOT NULL UNIQUE,
+    creation_time INTEGER NOT NULL,
+    data_categories TEXT NOT NULL,  -- JSON array of included data types
+    anonymization_level TEXT NOT NULL,  -- 'full', 'partial', 'aggregated'
+    encryption_key_id TEXT,
+    price_model TEXT,  -- JSON for pricing rules
+    access_control TEXT,  -- JSON for permitted operations
+    metadata TEXT,  -- Additional package metadata
+    FOREIGN KEY(encryption_key_id) REFERENCES encryption_keys(key_id)
+);
+
+-- 3. Content Feed Algorithm Support
+CREATE TABLE IF NOT EXISTS content_preferences (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,  -- If multi-user support needed
+    content_type TEXT NOT NULL,  -- 'article', 'product', 'social'
+    preference_data TEXT NOT NULL,  -- JSON for preferences
+    learning_model TEXT,  -- Reference to trained model
+    last_updated INTEGER NOT NULL
+);
+
+-- 4. ML Model Management
+CREATE TABLE IF NOT EXISTS ml_models (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    model_id TEXT NOT NULL UNIQUE,
+    model_type TEXT NOT NULL,  -- 'recommendation', 'classification', etc.
+    model_format TEXT NOT NULL,  -- 'pytorch', 'tensorflow', etc.
+    model_data BLOB,  -- Serialized model
+    training_metadata TEXT,  -- JSON for training params
+    version TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    last_used INTEGER,
+    performance_metrics TEXT  -- JSON for accuracy/performance stats
+);
+
+-- 5. Federated Learning Coordination
+CREATE TABLE IF NOT EXISTS federated_updates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    model_id TEXT NOT NULL,
+    update_sequence INTEGER NOT NULL,
+    update_data BLOB NOT NULL,  -- Encrypted model updates
+    differential_privacy_params TEXT,  -- JSON for DP parameters
+    created_at INTEGER NOT NULL,
+    status TEXT NOT NULL,  -- 'pending', 'applied', 'rejected'
+    FOREIGN KEY(model_id) REFERENCES ml_models(model_id)
+);
+
+-- 6. Enhanced Event Categorization
+ALTER TABLE events ADD COLUMN IF NOT EXISTS privacy_level TEXT NOT NULL DEFAULT 'standard';
+ALTER TABLE events ADD COLUMN IF NOT EXISTS data_category TEXT NOT NULL DEFAULT 'general';
+ALTER TABLE events ADD COLUMN IF NOT EXISTS federation_eligible BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- 7. Access Control and Audit
+CREATE TABLE IF NOT EXISTS access_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER,
+    package_id TEXT,
+    access_time INTEGER NOT NULL,
+    access_type TEXT NOT NULL,  -- 'read', 'export', 'delete'
+    requester TEXT NOT NULL,  -- Identity of accessing entity
+    purpose TEXT,  -- Reason for access
+    FOREIGN KEY(event_id) REFERENCES events(id),
+    FOREIGN KEY(package_id) REFERENCES data_packages(package_id)
+);
+
+-- 8. Views for Marketplace Analytics
+CREATE VIEW IF NOT EXISTS v_marketplace_metrics AS
+SELECT 
+    dp.package_id,
+    dp.data_categories,
+    dp.anonymization_level,
+    COUNT(DISTINCT al.requester) as unique_accessors,
+    COUNT(al.id) as total_accesses,
+    MAX(al.access_time) as last_accessed
+FROM data_packages dp
+LEFT JOIN access_logs al ON dp.package_id = al.package_id
+GROUP BY dp.package_id;
+
+-- 9. Indexes for Performance
+CREATE INDEX IF NOT EXISTS idx_events_privacy_category 
+    ON events(privacy_level, data_category);
+    
+CREATE INDEX IF NOT EXISTS idx_packages_anonymization 
+    ON data_packages(anonymization_level, creation_time);
+
+CREATE INDEX IF NOT EXISTS idx_federated_updates_sequence 
+    ON federated_updates(model_id, update_sequence);
+
 -- Views for common queries
 CREATE VIEW IF NOT EXISTS v_daily_activity AS
 SELECT 
