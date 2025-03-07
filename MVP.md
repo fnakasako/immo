@@ -5,55 +5,42 @@ This updated MVP architecture integrates a comprehensive novel analysis and embe
 
 ```
 creativity-booster/
-├── frontend/                      # React + TypeScript
-│   ├── src/
-│   │   ├── components/            
-│   │   │   ├── StoryForm/         # Story generation inputs
-│   │   │   ├── StoryViewer/       # Rendered story display
-│   │   │   ├── StoryAnalyzer/     # NEW: Story analysis tools
-│   │   │   │   ├── PlotVisualizer/# Visual plot structure tools
-│   │   │   │   ├── CharacterMap/  # Character relationship viewer
-│   │   │   │   └── RevisionTools/ # Coherence maintenance UI
-│   │   │   └── common/            # Shared UI elements
-│   │   ├── hooks/                 
-│   │   │   ├── useAI.ts           # AI service integration
-│   │   │   ├── useStory.ts        # Story state management
-│   │   │   └── useAnalysis.ts     # NEW: Analysis features hook
-│   │   ├── services/              
-│   │   │   ├── ai.ts              # Backend AI client
-│   │   │   └── analysis.ts        # NEW: Analysis services
-│   │   └── utils/                 # Helper functions
-│   └── tests/                     # Frontend test suite
-├── backend/                       # FastAPI (Python)
+├── backend/
 │   ├── app/
-│   │   ├── main.py                # Application entry point
-│   │   ├── api/                   # Endpoint definitions
+│   │   ├── main.py
+│   │   ├── api/
 │   │   │   └── v1/
-│   │   │       ├── story.py       # Story generation routes
-│   │   │       └── analysis.py    # NEW: Analysis endpoints
-│   │   ├── core/                  # Application core
-│   │   │   ├── config.py          # Environment configuration
-│   │   │   └── security.py        # API security controls
-│   │   ├── models/                # Data models
-│   │   │   ├── request.py         # Request schemas
-│   │   │   └── response.py        # Response schemas
-│   │   ├── services/              # Business logic
-│   │   │   ├── ai_service.py      # AI provider integration
-│   │   │   └── analysis/          # NEW: Analysis services
-│   │   │       ├── novel_processor.py    # Text analysis pipeline
-│   │   │       ├── plot_analyzer.py      # Plot structure analysis
-│   │   │       ├── character_analyzer.py # Character analysis
-│   │   │       └── embedding_service.py  # Embedding generation
-│   │   ├── storage/               # NEW: Storage services
-│   │   │   ├── vector_store.py    # Milvus integration
-│   │   │   └── version_manager.py # Revision tracking
-│   │   └── utils/                 # Helper utilities
-│   └── tests/                     # Backend test suite
-└── docs/                          # Documentation
-    ├── architecture.md            # System design details
-    ├── api-spec.md                # API specifications
-    ├── analysis-pipeline.md       # NEW: Analysis details
-    └── roadmap.md                 # Development timeline
+│   │   │       ├── story.py          # Updated with status endpoints
+│   │   │       ├── chapters.py       # New chapter management endpoints
+│   │   │       └── analysis.py
+│   │   ├── core/
+│   │   │   ├── database.py           # SQLAlchemy configuration
+│   │   │   ├── config.py
+│   │   │   └── security.py
+│   │   ├── models/
+│   │   │   ├── orm/                  # New directory for DB models
+│   │   │   │   ├── story.py          # StoryGenerationRecord
+│   │   │   │   ├── chapter.py        # Chapter model
+│   │   │   │   └── __init__.py
+│   │   │   ├── enums.py              # Status enums
+│   │   │   ├── request.py
+│   │   │   └── response.py           # Updated response models
+│   │   ├── services/
+│   │   │   ├── generation/           # New generation subsystem
+│   │   │   │   ├── coordinator.py    # Generation workflow manager
+│   │   │   │   ├── chapter_writer.py # Chapter processing
+│   │   │   │   └── outline.py        # Outline generation
+│   │   │   ├── ai_service.py
+│   │   │   └── analysis/
+│   │   ├── storage/
+│   │   │   ├── repositories/         # New data access layer
+│   │   │   │   ├── story_repo.py     # Story persistence
+│   │   │   │   └── chapter_repo.py   # Chapter operations
+│   │   │   ├── vector_store.py
+│   │   │   └── version_manager.py
+│   │   └── utils/
+│   │       └── progress.py           # Progress calculation utilities
+└── ...
 ```
 
 ## Enhanced MVP Capabilities

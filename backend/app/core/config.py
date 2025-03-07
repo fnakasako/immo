@@ -10,17 +10,19 @@ class Settings(BaseSettings):
     # CORS Configuration
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "https://localhost:3000"]
 
-    #AI Model Configuration
+    # Database Configuration
+    DATABASE_URL: str = "postgresql://postgres:postgres@postgres:5432/immo"
+
+    # AI Model Configuration
     ANTHROPIC_API_KEY: str
     DEFAULT_MODEL: str = "claude-3-sonnet"
     MAX_CHAPTERS: int = 10
 
-    # Enviornment Configuration
+    # Environment Configuration
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
 
-
     class Config:
-        env_file =".env"
+        env_file = ".env"
 
 settings = Settings()

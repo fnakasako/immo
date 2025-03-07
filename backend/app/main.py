@@ -9,19 +9,20 @@ app = FastAPI(
     version = "0.1.0"
 )
 
-#CORS middleware configuration
 
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=[*],
-    allow_headers=[*],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include routers
-app.include_router(novel.router, prefix="api/novels", tags = ["novels"])
+app.include_router(router)
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    """Health check endpoint"""
+    return {"status": "ok"}

@@ -23,12 +23,31 @@ services:
     environment:
       - ENVIRONMENT=development
       - LOG_LEVEL=debug
-      # ADd other environment variables
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/immo
+      # Add other environment variables
     volumes:
       - ./backend:/app
     networks:
       - immo-network
+    depends_on:
+      - postgres
 
+  postgres:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=immo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - immo-network
+      
 networks:
   immo-network:
     driver: bridge
+
+volumes:
+  postgres_data:
