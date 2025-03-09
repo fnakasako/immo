@@ -24,7 +24,7 @@ services:
       - ENVIRONMENT=development
       - LOG_LEVEL=debug
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/immo
-      # Add other environment variables
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     volumes:
       - ./backend:/app
     networks:
