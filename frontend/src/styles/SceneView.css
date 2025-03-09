@@ -1,0 +1,61 @@
+/* SceneView.css */
+
+.scene-card {
+  background-color: white;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.scene-header {
+  padding: 1rem;
+  background-color: #f1f3f5;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scene-header h5 {
+  margin: 0;
+  color: #343a40;
+}
+
+.scene-content {
+  padding: 1.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.scene-metadata {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.metadata-item {
+  background-color: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 4px;
+}
+
+.metadata-item h6 {
+  margin: 0 0 0.5rem 0;
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.metadata-item p {
+  margin: 0;
+  color: #343a40;
+}
+
+.scene-text {
+  line-height: 1.8;
+}
+
+.scene-text p {
+  margin-bottom: 1rem;
+}

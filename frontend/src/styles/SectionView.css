@@ -1,0 +1,43 @@
+/* SectionView.css */
+
+.section-card {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  border: 1px solid #e9ecef;
+}
+
+.section-header {
+  padding: 1rem;
+  background-color: #e9ecef;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-header h4 {
+  margin: 0;
+  color: #343a40;
+}
+
+.section-content {
+  padding: 1.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.section-summary {
+  margin-bottom: 1.5rem;
+  font-style: italic;
+  color: #6c757d;
+}
+
+.scenes-container {
+  margin-top: 1.5rem;
+}
+
+.scenes-container h5 {
+  margin-bottom: 1rem;
+  color: #343a40;
+}
