@@ -26,15 +26,10 @@ COPY . .
 # Expose port
 EXPOSE 8000
 
-# Create a startup script
-RUN echo '#!/bin/bash\n\
-echo "Waiting for PostgreSQL to start..."\n\
-sleep 5\n\
-echo "Running database migrations..."\n\
-alembic upgrade head || (alembic revision --autogenerate -m "Initial migration" && alembic upgrade head)\n\
-echo "Starting application..."\n\
-uvicorn app.main:app --host 0.0.0.0 --port 8000\n\
-' > /app/start.sh && chmod +x /app/start.sh
-
-# Start the application
-CMD ["/app/start.sh"]
+# Start the application directly with CMD
+CMD bash -c "echo 'Waiting for PostgreSQL to start...' && \
+    sleep 5 && \
+    echo 'Running database migrations...' && \
+    alembic upgrade head || (alembic revision --autogenerate -m 'Initial migration' && alembic upgrade head) && \
+    echo 'Starting application...' && \
+    uvicorn app.main:app --host 0.0.0.0 --port 8000"

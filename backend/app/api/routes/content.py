@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from typing import List
 
-from app.api.dependencies import get_db, get_generation_coordinator
+from app.api.dependencies import get_db, get_generation_service
 from app.models.schemas import (
     ContentGenerationRequest, 
     ContentGenerationResponse,
@@ -25,7 +25,7 @@ async def create_content(
     request: ContentGenerationRequest,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    coordinator: GenerationCoordinator = Depends(get_generation_coordinator)
+    coordinator: GenerationCoordinator = Depends(get_generation_service)
 ):
     """Initiate content generation process"""
     try:
@@ -50,7 +50,7 @@ async def create_content(
             response_model=ContentGenerationResponse)
 async def get_content(
     content_id: UUID,
-    coordinator: GenerationCoordinator = Depends(get_generation_coordinator)
+    coordinator: GenerationCoordinator = Depends(get_generation_service)
 ):
     """Get content generation status and outline"""
     try:
@@ -70,7 +70,7 @@ async def get_content(
             response_model=SectionListResponse)
 async def get_sections(
     content_id: UUID,
-    coordinator: GenerationCoordinator = Depends(get_generation_coordinator)
+    coordinator: GenerationCoordinator = Depends(get_generation_service)
 ):
     """Get all sections for content"""
     try:
@@ -86,7 +86,7 @@ async def get_sections(
 async def get_section(
     content_id: UUID,
     section_number: int,
-    coordinator: GenerationCoordinator = Depends(get_generation_coordinator)
+    coordinator: GenerationCoordinator = Depends(get_generation_service)
 ):
     """Get specific section by number"""
     try:
@@ -102,7 +102,7 @@ async def get_section(
 async def get_scenes(
     content_id: UUID,
     section_number: int,
-    coordinator: GenerationCoordinator = Depends(get_generation_coordinator)
+    coordinator: GenerationCoordinator = Depends(get_generation_service)
 ):
     """Get all scenes for a section"""
     try:
@@ -119,7 +119,7 @@ async def get_scene(
     content_id: UUID,
     section_number: int,
     scene_number: int,
-    coordinator: GenerationCoordinator = Depends(get_generation_coordinator)
+    coordinator: GenerationCoordinator = Depends(get_generation_service)
 ):
     """Get specific scene by number"""
     try:

@@ -6,7 +6,7 @@ import {
     SectionResponse,
     SceneListResponse,
     SceneResponse
-  } from '../types';
+  } from '../../types';
   
   const API_BASE = '/api';
   
@@ -22,8 +22,17 @@ import {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to create content');
+        if (response.status === 401) {
+          throw new Error('Invalid credentials. Please check your username and password.');
+        }
+        
+        // Try to parse error as JSON, but handle cases where it's not valid JSON
+        try {
+          const error = await response.json();
+          throw new Error(error.detail || 'Failed to create content');
+        } catch (jsonError) {
+          throw new Error('Failed to create content');
+        }
       }
       
       return response.json();
@@ -35,6 +44,9 @@ import {
       
       if (!response.ok) {
         const error = await response.json();
+        if (response.status === 401) {
+          throw new Error('Invalid credentials. Please check your username and password.');
+        }
         throw new Error(error.detail || 'Failed to fetch content');
       }
       
@@ -47,6 +59,9 @@ import {
       
       if (!response.ok) {
         const error = await response.json();
+        if (response.status === 401) {
+          throw new Error('Invalid credentials. Please check your username and password.');
+        }
         throw new Error(error.detail || 'Failed to fetch sections');
       }
       
@@ -59,6 +74,9 @@ import {
       
       if (!response.ok) {
         const error = await response.json();
+        if (response.status === 401) {
+          throw new Error('Invalid credentials. Please check your username and password.');
+        }
         throw new Error(error.detail || 'Failed to fetch section');
       }
       
@@ -71,6 +89,9 @@ import {
       
       if (!response.ok) {
         const error = await response.json();
+        if (response.status === 401) {
+          throw new Error('Invalid credentials. Please check your username and password.');
+        }
         throw new Error(error.detail || 'Failed to fetch scenes');
       }
       
@@ -83,6 +104,9 @@ import {
       
       if (!response.ok) {
         const error = await response.json();
+        if (response.status === 401) {
+          throw new Error('Invalid credentials. Please check your username and password.');
+        }
         throw new Error(error.detail || 'Failed to fetch scene');
       }
       

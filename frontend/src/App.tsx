@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import ContentForm from './components/ContentForm';
 import ContentViewer from './components/ContentViewer';
 import { contentApi } from './api/contentApi';
-import { ContentGenerationRequest } from './types';
+import { ContentGenerationRequest } from '../types';
 import './App.css';
 
 const App: React.FC = () => {
@@ -34,8 +34,8 @@ const App: React.FC = () => {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>Novel Creator</h1>
-        <p>Generate complete stories with AI</p>
+        <h1>Immo</h1>
+        <p>An AI Writing Tool</p>
       </header>
       
       <main className="app-main">
@@ -61,7 +61,7 @@ const App: React.FC = () => {
       </main>
       
       <footer className="app-footer">
-        <p>AI-Powered Novel Creator - MVP Version</p>
+        <p>AI-Powered Immo - MVP Version</p>
       </footer>
     </div>
   );

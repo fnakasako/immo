@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 import uuid
 from datetime import datetime
 
-from app.db.base_class import Base
+from app.core.database import Base
 from app.models.enums import GenerationStatus, SectionStatus, SceneStatus
 
 class ContentGenerationRecord(Base):
@@ -22,7 +22,7 @@ class ContentGenerationRecord(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    sections = relationship("Section", back_populates="content", cascade="all, delete-orphan")
+    sections = relationship("Section", back_populates="content_record", cascade="all, delete-orphan")
     
     def calculate_progress(self) -> float:
         """Calculate progress percentage based on completed sections and scenes"""
@@ -31,6 +31,7 @@ class ContentGenerationRecord(Base):
 
 class Section(Base):
     __tablename__ = "sections"
+    __table_args__ = {'extend_existing': True}
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     content_id = Column(UUID(as_uuid=True), ForeignKey("content_generations.id"), nullable=False)
@@ -42,7 +43,7 @@ class Section(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    content = relationship("ContentGenerationRecord", back_populates="sections")
+    content_record = relationship("ContentGenerationRecord", back_populates="sections")
     scenes = relationship("Scene", back_populates="section", cascade="all, delete-orphan")
 
 class Scene(Base):

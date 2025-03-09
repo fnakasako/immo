@@ -11,7 +11,7 @@ class StoryGenerationRequest(BaseModel):
                              description= "Detailed description of the story to generate")
     sections_count: int = Field(..., ge=1, le=20,
                                 description = "Number of chapters to generate")
-    style: Optional[str] = Field(none,
+    style: Optional[str] = Field(None,
                                  description = "Optional writing style for the story")
     model: str = Field("default",
                        description = "AI model to use for generation")
@@ -39,7 +39,7 @@ class StoryGenerationResponse(BaseModel):
     progress: float = Field(..., ge=0, le=100,
                             description="Generation progress percentage (0-100)")
     title: Optional[str] = None
-    outline: Optiona[str] = None
+    outline: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

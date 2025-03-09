@@ -2,7 +2,7 @@
 from uuid import UUID
 import asyncio
 from typing import List, Dict, Any
-from app.models import ContentGenerationRecord, Section, Scene
+from app.models.orm.content import ContentGenerationRecord, Section, Scene
 from app.models.enums import GenerationStatus, SectionStatus, SceneStatus
 from app.ai.service import AIService, AIServiceException
 

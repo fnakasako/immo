@@ -10,7 +10,8 @@ from app.models.schemas import (
     SectionList,
     SectionResponse
 )
-from app.models.orm.story import StoryGenerationRecord, Section
+from app.models.orm.story import StoryGenerationRecord
+from app.models.orm.section import Section
 from app.services.generation import GenerationCoordinator
 from app.core.logging import logger
 
@@ -66,7 +67,7 @@ async def create_story(
             response_model = StoryGenerationResponse)
 async def get_story(
     story_id: UUID,
-    db: Session = Depends(gets_db)
+    db: Session = Depends(get_db)
 ):
     """
     Get story generation status.
