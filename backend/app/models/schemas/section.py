@@ -8,7 +8,7 @@ from app.models.enums import SectionStatus
 class SectionResponse(BaseModel):
     """Schema for chapter response"""
     id: UUID
-    story_id: UUID
+    content_id: UUID
     number: int
     title: str
     summary: Optional[str]
@@ -22,5 +22,5 @@ class SectionResponse(BaseModel):
 
 class SectionList(BaseModel):
     """Schema for listing multiple sections"""
-    chapters: List[SectionResponse]
+    sections: List[SectionResponse]
     total: int

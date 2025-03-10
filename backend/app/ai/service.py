@@ -4,7 +4,7 @@ import asyncio
 import logging
 from typing import Dict, List, Optional, Any, Union
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-import openai
+import anthropic
 from app.core.config import settings
 from app.ai.prompts import PromptTemplates
 
@@ -21,22 +21,51 @@ class ContentModerationException(AIServiceException):
 class AIService:
     """Service for generating content using AI"""
     
-    def __init__(self, api_key: str = None, model: str = "gpt-4"):
+    def __init__(self, api_key: str = None, model: str = "claude-3-sonnet-20240229"):
         """Initialize with API key and model"""
-        self.api_key = api_key or settings.OPENAI_API_KEY
-        self.client = openai.AsyncOpenAI(api_key=self.api_key)
+        self.api_key = api_key or settings.ANTHROPIC_API_KEY
+        # Log the first few characters of the API key for debugging
+        if self.api_key:
+            logger.info(f"Initializing AIService with API key starting with: {self.api_key[:10]}...")
+            logger.info(f"API key length: {len(self.api_key)}")
+            # Check if the API key format is valid
+            if not self.api_key.startswith("sk-ant-"):
+                logger.error("API key does not have the expected format (should start with 'sk-ant-')")
+        else:
+            logger.error("No API key provided to AIService")
+            
+        self.client = anthropic.AsyncAnthropic(api_key=self.api_key)
         self.model = model
         self.max_retries = 3
         self.temperature_outline = 0.7  # More creative for outlines
         self.temperature_scenes = 0.75  # Balanced for scene planning
         self.temperature_prose = 0.8    # Most creative for prose
         self.timeout = 120  # Seconds
+        
+        # Verify API key on initialization
+        asyncio.create_task(self._verify_api_key())
+        
+    async def _verify_api_key(self):
+        """Verify that the API key is valid by making a simple request to the Anthropic API"""
+        try:
+            # Make a simple request to the Anthropic API to verify the API key
+            logger.info("Verifying API key with Anthropic...")
+            await self.client.messages.create(
+                model=self.model,
+                system="Test",
+                messages=[{"role": "user", "content": "Test"}],
+                max_tokens=10
+            )
+            logger.info("API key verification successful")
+        except anthropic.AuthenticationError as e:
+            logger.error(f"API key verification failed: {str(e)}")
+            # Don't raise an exception here, just log the error
     
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=30),
         retry=retry_if_exception_type(
-            (openai.APITimeoutError, openai.APIConnectionError, openai.RateLimitError)
+            (anthropic.APITimeoutError, anthropic.APIConnectionError, anthropic.RateLimitError)
         )
     )
     async def generate_outline(self, description: str, style: str = None, 
@@ -61,18 +90,17 @@ class AIService:
                 sections_count=sections_count
             )
             
-            response = await self.client.chat.completions.create(
+            response = await self.client.messages.create(
                 model=self.model,
+                system="You are a professional content creator.",
                 messages=[
-                    {"role": "system", "content": "You are a professional content creator."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=self.temperature_outline,
-                timeout=self.timeout,
-                response_format={"type": "json_object"}
+                max_tokens=4000
             )
             
-            content = response.choices[0].message.content
+            content = response.content[0].text
             outline_data = json.loads(content)
             
             # Validate response structure
@@ -84,6 +112,9 @@ class AIService:
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"Failed to parse AI response: {str(e)}")
             raise AIServiceException(f"Invalid response format from AI service: {str(e)}")
+        except anthropic.AuthenticationError as e:
+            logger.error(f"Authentication error in generate_outline: {str(e)}")
+            raise AIServiceException("Authentication failed: Invalid API key or credentials")
         except Exception as e:
             logger.error(f"Unexpected error in generate_outline: {str(e)}")
             raise AIServiceException(f"Failed to generate outline: {str(e)}")
@@ -92,7 +123,7 @@ class AIService:
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=30),
         retry=retry_if_exception_type(
-            (openai.APITimeoutError, openai.APIConnectionError, openai.RateLimitError)
+            (anthropic.APITimeoutError, anthropic.APIConnectionError, anthropic.RateLimitError)
         )
     )
     async def generate_scenes(self, context: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -125,18 +156,17 @@ class AIService:
                 section_summary=section_summary
             )
             
-            response = await self.client.chat.completions.create(
+            response = await self.client.messages.create(
                 model=self.model,
+                system="You are a professional content creator.",
                 messages=[
-                    {"role": "system", "content": "You are a professional content creator."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=self.temperature_scenes,
-                timeout=self.timeout,
-                response_format={"type": "json_object"}
+                max_tokens=4000
             )
             
-            content = response.choices[0].message.content
+            content = response.content[0].text
             scenes_data = json.loads(content)
             
             # Validate scenes are in an array format
@@ -156,6 +186,9 @@ class AIService:
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"Failed to parse AI scene response: {str(e)}")
             raise AIServiceException(f"Invalid scene response format: {str(e)}")
+        except anthropic.AuthenticationError as e:
+            logger.error(f"Authentication error in generate_scenes: {str(e)}")
+            raise AIServiceException("Authentication failed: Invalid API key or credentials")
         except Exception as e:
             logger.error(f"Unexpected error in generate_scenes: {str(e)}")
             raise AIServiceException(f"Failed to generate scenes: {str(e)}")
@@ -164,7 +197,7 @@ class AIService:
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=30),
         retry=retry_if_exception_type(
-            (openai.APITimeoutError, openai.APIConnectionError, openai.RateLimitError)
+            (anthropic.APITimeoutError, anthropic.APIConnectionError, anthropic.RateLimitError)
         )
     )
     async def generate_prose(self, context: Dict[str, Any]) -> str:
@@ -221,23 +254,25 @@ class AIService:
                 style_instruction=style_instruction
             )
             
-            response = await self.client.chat.completions.create(
+            response = await self.client.messages.create(
                 model=self.model,
+                system="You are a professional writer.",
                 messages=[
-                    {"role": "system", "content": "You are a professional writer."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=self.temperature_prose,
-                timeout=self.timeout,
                 max_tokens=2000  # Appropriate for a scene-length generation
             )
             
-            prose_content = response.choices[0].message.content
+            prose_content = response.content[0].text
             
             logger.info(f"Successfully generated prose for scene '{scene_heading}' " +
                       f"in section {section_number} ({len(prose_content)} chars)")
             return prose_content
             
+        except anthropic.AuthenticationError as e:
+            logger.error(f"Authentication error in generate_prose: {str(e)}")
+            raise AIServiceException("Authentication failed: Invalid API key or credentials")
         except Exception as e:
             logger.error(f"Unexpected error in generate_prose: {str(e)}")
             raise AIServiceException(f"Failed to generate prose: {str(e)}")

@@ -20,7 +20,8 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit, isSubmitting }) => 
   const [formData, setFormData] = useState<ContentGenerationRequest>({
     description: '',
     style: 'literary',
-    sections_count: 5
+    sections_count: 5,
+    model: 'default'
   });
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

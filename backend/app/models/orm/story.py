@@ -21,7 +21,7 @@ class StoryGenerationRecord(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate =datetime.utcnow)
 
-    sections = relationship("Section", back_populates ="story", cascade ="all, delete-orphan")
+    sections = relationship("app.models.orm.section.Section", back_populates="story", cascade="all, delete-orphan")
 
     def calculate_progress(self) -> float:
         """Calculate generation progress percentage"""

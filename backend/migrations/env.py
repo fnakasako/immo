@@ -6,6 +6,7 @@ from alembic import context
 from app.core.database import Base
 from app.models.orm.story import StoryGenerationRecord
 from app.models.orm.section import Section
+from app.models.orm.content import ContentGenerationRecord, Scene
 from app.core.config import settings
 
 # this is the Alembic Config object

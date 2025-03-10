@@ -26,6 +26,7 @@ export interface ContentGenerationRequest {
     description: string;
     style?: string;
     sections_count?: number;
+    model?: string;
 }
 
 export interface ContentGenerationResponse {

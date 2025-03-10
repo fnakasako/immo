@@ -23,7 +23,7 @@ class Section(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default = datetime.utcnow)
 
-    story = relationship("StoryGenerationRecord", back_populates="sections")
+    story = relationship("app.models.orm.story.StoryGenerationRecord", back_populates="sections")
 
     class Config:
         orm_mode = True

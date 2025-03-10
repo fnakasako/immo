@@ -22,7 +22,7 @@ class ContentGenerationRecord(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    sections = relationship("Section", back_populates="content_record", cascade="all, delete-orphan")
+    sections = relationship("app.models.orm.content.Section", back_populates="content_record", cascade="all, delete-orphan")
     
     def calculate_progress(self) -> float:
         """Calculate progress percentage based on completed sections and scenes"""
@@ -43,7 +43,7 @@ class Section(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    content_record = relationship("ContentGenerationRecord", back_populates="sections")
+    content_record = relationship("app.models.orm.content.ContentGenerationRecord", back_populates="sections")
     scenes = relationship("Scene", back_populates="section", cascade="all, delete-orphan")
 
 class Scene(Base):
@@ -64,4 +64,4 @@ class Scene(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    section = relationship("Section", back_populates="scenes")
+    section = relationship("app.models.orm.content.Section", back_populates="scenes")

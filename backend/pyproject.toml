@@ -21,6 +21,7 @@ psycopg2-binary = "^2.9.10"
 alembic = "^1.15.1"
 tenacity = "^8.2.3"
 openai = "^1.12.0"
+asyncpg = "^0.29.0"
 
 
 [build-system]
