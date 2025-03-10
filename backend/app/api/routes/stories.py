@@ -37,11 +37,8 @@ async def create_story(
         # Create story record and trigger the processing
         story_id = await generation_service.create_story(request)
 
-        # Sechedule outline generation in the background
-        background_tasks.add_task(
-            generation_service.process_outline,
-            story_id = story_id
-        )
+        # No longer automatically trigger generation
+        # The user will manually trigger generation steps
 
         # Retrieve the created story to return
         story = db.query(StoryGenerationRecord).filter(

@@ -21,8 +21,15 @@ const App: React.FC = () => {
     setError(null);
     
     try {
+      // First create the content record
       const response = await contentApi.createContent(formData);
-      setContentId(response.id);
+      const contentId = response.id;
+      
+      // Then manually trigger the outline generation
+      await contentApi.generateOutline(contentId);
+      
+      // Set the content ID and change to view state
+      setContentId(contentId);
       setAppState('view');
     } catch (error) {
       console.error('Content creation failed:', error);

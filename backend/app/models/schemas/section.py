@@ -6,7 +6,7 @@ from datetime import datetime
 from app.models.enums import SectionStatus
 
 class SectionResponse(BaseModel):
-    """Schema for chapter response"""
+    """Schema for section response"""
     id: UUID
     content_id: UUID
     number: int
@@ -19,6 +19,12 @@ class SectionResponse(BaseModel):
 
     class Config: 
         orm_mode = True
+
+class SectionUpdateRequest(BaseModel):
+    """Schema for updating section details"""
+    title: Optional[str] = None
+    summary: Optional[str] = None
+    content: Optional[str] = None
 
 class SectionList(BaseModel):
     """Schema for listing multiple sections"""

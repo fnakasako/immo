@@ -1,38 +1,85 @@
 /* SceneView.css */
 
-.scene-card {
+.scene-view {
   background-color: white;
   border-radius: 8px;
-  margin-bottom: 1.5rem;
   overflow: hidden;
   border: 1px solid #e9ecef;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
-.scene-header {
+.scene-controls {
   padding: 1rem;
   background-color: #f1f3f5;
-  cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid #e9ecef;
 }
 
-.scene-header h5 {
-  margin: 0;
-  color: #343a40;
+.view-toggles {
+  display: flex;
+  gap: 0.5rem;
 }
 
-.scene-content {
+.view-toggle {
+  background: none;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  color: #6c757d;
+}
+
+.view-toggle:hover {
+  background-color: #e9ecef;
+}
+
+.view-toggle.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.scene-prose, .scene-metadata, .scene-editor {
   padding: 1.5rem;
-  border-top: 1px solid #e9ecef;
 }
 
+/* Scene Prose */
+.prose-content {
+  line-height: 1.8;
+}
+
+.prose-content p {
+  margin-bottom: 1rem;
+}
+
+.generating-message, .pending-message {
+  padding: 2rem;
+  text-align: center;
+  color: #6c757d;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.error-message {
+  padding: 1rem;
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+}
+
+/* Scene Metadata */
 .scene-metadata {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
-  margin-bottom: 1.5rem;
 }
 
 .metadata-item {
@@ -41,10 +88,10 @@
   border-radius: 4px;
 }
 
-.metadata-item h6 {
+.metadata-item h4 {
   margin: 0 0 0.5rem 0;
-  color: #6c757d;
-  font-size: 0.875rem;
+  color: #495057;
+  font-size: 1rem;
 }
 
 .metadata-item p {
@@ -52,10 +99,19 @@
   color: #343a40;
 }
 
-.scene-text {
-  line-height: 1.8;
+/* Scene Editor */
+.prose-editor, .metadata-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.scene-text p {
-  margin-bottom: 1rem;
+.scene-loading, .scene-error {
+  padding: 2rem;
+  text-align: center;
+  color: #6c757d;
+}
+
+.scene-error {
+  color: #721c24;
 }

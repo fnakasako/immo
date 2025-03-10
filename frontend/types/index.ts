@@ -1,7 +1,12 @@
 export enum GenerationStatus {
     PENDING = 'pending',
     PROCESSING_OUTLINE = 'processing_outline',
+    OUTLINE_COMPLETED = 'outline_completed',
     PROCESSING_SECTIONS = 'processing_sections',
+    SECTIONS_COMPLETED = 'sections_completed',
+    PROCESSING_SCENES = 'processing_scenes',
+    SCENES_COMPLETED = 'scenes_completed',
+    PROCESSING_PROSE = 'processing_prose',
     COMPLETED = 'completed',
     PARTIALLY_COMPLETED = 'partially_completed',
     FAILED = 'failed'
@@ -9,7 +14,9 @@ export enum GenerationStatus {
 
 export enum SectionStatus {
     PENDING = 'pending',
+    READY_FOR_SCENES = 'ready_for_scenes',
     GENERATING_SCENES = 'generating_scenes',
+    SCENES_COMPLETED = 'scenes_completed',
     PROCESSING_SCENES = 'processing_scenes',
     COMPLETED = 'completed',
     FAILED = 'failed'
@@ -17,6 +24,7 @@ export enum SectionStatus {
 
 export enum SceneStatus {
     PENDING = 'pending',
+    READY_FOR_PROSE = 'ready_for_prose',
     GENERATING = 'generating',
     COMPLETED = 'completed',
     FAILED = 'failed'
@@ -37,6 +45,30 @@ export interface ContentGenerationResponse {
     progress: number;
     error: string | null;
     created_at: string;
+}
+
+export interface ContentUpdateRequest {
+    title?: string;
+    outline?: string;
+}
+
+export interface SectionUpdateRequest {
+    title?: string;
+    summary?: string;
+    content?: string;
+}
+
+export interface SceneUpdateRequest {
+    heading?: string;
+    setting?: string;
+    characters?: string[];
+    key_events?: string;
+    emotional_tone?: string;
+    content?: string;
+}
+
+export interface GenerationSelectionRequest {
+    items: number[];
 }
 
 export interface SectionResponse {

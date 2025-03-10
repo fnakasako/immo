@@ -40,6 +40,10 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit, isSubmitting }) => 
   return (
     <form onSubmit={handleSubmit} className="content-form">
       <h2>Create New Content</h2>
+      <p className="help-text">
+        Content generation is a step-by-step process. After creating the initial structure, 
+        you'll be guided through generating the outline, sections, scenes, and prose.
+      </p>
       
       <div className="form-group">
         <label htmlFor="description">Content Description</label>
@@ -95,7 +99,7 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit, isSubmitting }) => 
         className="submit-button"
         disabled={isSubmitting || !formData.description.trim()}
       >
-        {isSubmitting ? 'Generating...' : 'Generate Content'}
+        {isSubmitting ? 'Creating...' : 'Create Content Structure'}
       </button>
     </form>
   );

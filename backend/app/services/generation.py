@@ -30,11 +30,14 @@ class GenerationCoordinator:
         
         return content.id
     
-    async def process_content(self, content_id: UUID):
-        """Main generation pipeline for a piece of content"""
+    
+    async def generate_outline(self, content_id: UUID):
+        """Generate only the outline for a piece of content"""
         try:
-            # 1. Generate overall outline
+            # Get content record
             content = await self._get_content(content_id)
+            
+            # Generate outline
             outline = await self.ai_service.generate_outline(
                 description=content.description,
                 style=content.style,
@@ -44,19 +47,17 @@ class GenerationCoordinator:
             # Update content with outline
             content.title = outline['title']
             content.outline = outline['outline']
-            content.status = GenerationStatus.PROCESSING_SECTIONS
+            content.status = GenerationStatus.OUTLINE_COMPLETED
             await self.db_session.commit()
             
-            # 2. Create section records and process each section
+            # Create section records
             await self._create_section_records(content_id, outline['sections'])
             
-            # 3. Process each section in sequence
-            for i, section_data in enumerate(outline['sections']):
-                await self._process_section(content_id, i+1, section_data)
-            
-            # 4. Mark content as completed
-            content.status = GenerationStatus.COMPLETED
-            await self.db_session.commit()
+            return {
+                "title": outline['title'],
+                "outline": outline['outline'],
+                "sections": outline['sections']
+            }
             
         except Exception as e:
             # Handle failures
@@ -66,15 +67,47 @@ class GenerationCoordinator:
             await self.db_session.commit()
             raise
     
-    async def _process_section(self, content_id: UUID, section_number: int, section_data: Dict[str, str]):
-        """Process a single section including scenes and prose"""
+    async def generate_sections(self, content_id: UUID):
+        """Generate section summaries and details"""
         try:
-            # 1. Get section record
+            # Get content and sections
+            content = await self._get_content(content_id)
+            sections = await self._get_sections(content_id)
+            
+            # Update content status
+            content.status = GenerationStatus.PROCESSING_SECTIONS
+            await self.db_session.commit()
+            
+            # Process each section to update summaries if needed
+            # In this implementation, sections are already created with summaries from the outline
+            # This method exists as a placeholder for future enhancements or if you want to
+            # generate more detailed section information
+            
+            # Mark sections as ready for scene generation
+            for section in sections:
+                section.status = SectionStatus.READY_FOR_SCENES
+            
+            await self.db_session.commit()
+            
+            return await self.get_sections(content_id)
+            
+        except Exception as e:
+            # Handle failures
+            content = await self._get_content(content_id)
+            content.status = GenerationStatus.FAILED
+            content.error = str(e)
+            await self.db_session.commit()
+            raise
+    
+    async def generate_scenes_for_section(self, content_id: UUID, section_number: int):
+        """Generate scenes for a specific section"""
+        try:
+            # Get section record
             section = await self._get_section(content_id, section_number)
             section.status = SectionStatus.GENERATING_SCENES
             await self.db_session.commit()
             
-            # 2. Generate scenes for this section
+            # Generate scenes for this section
             content = await self._get_content(content_id)
             scenes = await self.ai_service.generate_scenes({
                 'content_title': content.title,
@@ -84,16 +117,14 @@ class GenerationCoordinator:
                 'section_summary': section.summary
             })
             
-            # 3. Create scene records
+            # Create scene records
             await self._create_scene_records(content_id, section_number, scenes)
             
-            # 4. Process each scene to generate prose
-            for i, scene_data in enumerate(scenes):
-                await self._process_scene(content_id, section_number, i+1, scene_data)
-            
-            # 5. Mark section as completed
-            section.status = SectionStatus.COMPLETED
+            # Mark section as scenes completed
+            section.status = SectionStatus.SCENES_COMPLETED
             await self.db_session.commit()
+            
+            return await self.get_scenes(content_id, section_number)
             
         except Exception as e:
             # Handle section failure
@@ -103,25 +134,33 @@ class GenerationCoordinator:
             await self.db_session.commit()
             raise
     
-    async def _process_scene(self, content_id: UUID, section_number: int, 
-                           scene_number: int, scene_data: Dict[str, Any]):
-        """Generate prose for a single scene"""
+    async def generate_prose_for_scene(self, content_id: UUID, section_number: int, scene_number: int):
+        """Generate prose for a specific scene"""
         try:
-            # 1. Get scene record
+            # Get scene record
             scene = await self._get_scene(content_id, section_number, scene_number)
             scene.status = SceneStatus.GENERATING
             await self.db_session.commit()
             
-            # 2. Build context for prose generation
+            # Build context for prose generation
             content = await self._get_content(content_id)
             section = await self._get_section(content_id, section_number)
+            
+            # Get scene data
+            scene_data = {
+                'scene_heading': scene.heading,
+                'setting': scene.setting,
+                'characters': eval(scene.characters) if isinstance(scene.characters, str) else scene.characters,
+                'key_events': scene.key_events,
+                'emotional_tone': scene.emotional_tone
+            }
             
             # Get summaries of previous sections and scenes for context
             previous_context = await self._build_previous_context(
                 content_id, section_number, scene_number
             )
             
-            # 3. Generate prose for this scene
+            # Generate prose for this scene
             prose = await self.ai_service.generate_prose({
                 'content_title': content.title,
                 'content_outline': content.outline,
@@ -129,17 +168,19 @@ class GenerationCoordinator:
                 'section_number': section_number,
                 'scene_heading': scene_data['scene_heading'],
                 'setting': scene_data['setting'],
-                'characters': scene_data.get('characters', []),
+                'characters': scene_data['characters'],
                 'key_events': scene_data['key_events'],
                 'emotional_tone': scene_data['emotional_tone'],
                 'previous_context': previous_context,
                 'style': content.style
             })
             
-            # 4. Update scene with generated prose
+            # Update scene with generated prose
             scene.content = prose
             scene.status = SceneStatus.COMPLETED
             await self.db_session.commit()
+            
+            return await self.get_scene(content_id, section_number, scene_number)
             
         except Exception as e:
             # Handle scene failure
@@ -148,6 +189,21 @@ class GenerationCoordinator:
             scene.error = str(e)
             await self.db_session.commit()
             raise
+    
+    # Legacy methods kept for reference but no longer used directly
+    async def _process_section(self, content_id: UUID, section_number: int, section_data: Dict[str, str]):
+        """Legacy method - Process a single section including scenes and prose"""
+        await self.generate_scenes_for_section(content_id, section_number)
+        
+        # Process each scene to generate prose
+        scenes_result = await self.get_scenes(content_id, section_number)
+        for scene in scenes_result['scenes']:
+            await self.generate_prose_for_scene(content_id, section_number, scene['number'])
+    
+    async def _process_scene(self, content_id: UUID, section_number: int, 
+                           scene_number: int, scene_data: Dict[str, Any]):
+        """Legacy method - Generate prose for a single scene"""
+        await self.generate_prose_for_scene(content_id, section_number, scene_number)
     
     async def get_content_info(self, content_id: UUID):
         """Get content generation info"""

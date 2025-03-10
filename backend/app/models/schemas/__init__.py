@@ -7,13 +7,17 @@ from app.models.schemas.story import (
 
 from app.models.schemas.section import (
     SectionResponse,
+    SectionUpdateRequest,
     SectionList
 )
 
 from app.models.schemas.content import (
     ContentGenerationRequest,
     ContentGenerationResponse,
+    ContentUpdateRequest,
     SceneResponse,
+    SceneUpdateRequest,
     SceneListResponse,
-    SectionListResponse
+    SectionListResponse,
+    GenerationSelectionRequest
 )

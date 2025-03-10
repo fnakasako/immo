@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from uuid import UUID
 from datetime import datetime
 
@@ -34,6 +34,11 @@ class ContentGenerationResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class ContentUpdateRequest(BaseModel):
+    """Schema for updating content outline"""
+    title: Optional[str] = None
+    outline: Optional[str] = None
+
 class SceneResponse(BaseModel):
     """Schema for scene response"""
     id: UUID
@@ -53,6 +58,15 @@ class SceneResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class SceneUpdateRequest(BaseModel):
+    """Schema for updating scene details"""
+    heading: Optional[str] = None
+    setting: Optional[str] = None
+    characters: Optional[List[str]] = None
+    key_events: Optional[str] = None
+    emotional_tone: Optional[str] = None
+    content: Optional[str] = None
+
 class SceneListResponse(BaseModel):
     """Schema for listing multiple scenes"""
     scenes: List[SceneResponse]
@@ -62,3 +76,7 @@ class SectionListResponse(BaseModel):
     """Schema for listing multiple sections"""
     sections: List[Dict]
     total: int
+
+class GenerationSelectionRequest(BaseModel):
+    """Schema for selecting items to generate"""
+    items: List[int] = Field(..., description="List of item numbers to generate")
