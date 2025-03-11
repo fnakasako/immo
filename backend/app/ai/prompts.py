@@ -29,6 +29,30 @@ class PromptTemplates:
       ]
     }
     """)
+
+    SECTIONS_TEMPLATE = Template("""
+    You are a content creator tasked with creating detailed sections for a piece titled "$content_title".
+
+    Content Outline:
+    $content_outline
+
+    Based on this outline, generate $sections_count detailed sections. Each section should have:
+    1. A clear, descriptive title
+    2. A comprehensive summary of what the section will contain
+    3. A style description that explains the writing style, tone, and approach for this specific section
+
+    $style_instruction
+
+    Format your response as a JSON array of section objects with the following structure:
+    [
+      {
+        "title": "Section Title",
+        "summary": "Detailed summary of the section content",
+        "style_description": "Description of the writing style for this section"
+      },
+      ...
+    ]
+    """)
     
     SCENE_BREAKDOWN_TEMPLATE = Template("""
     You are a professional content creator working on "$content_title".

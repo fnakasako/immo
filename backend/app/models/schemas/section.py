@@ -13,6 +13,7 @@ class SectionResponse(BaseModel):
     title: str
     summary: Optional[str]
     content: Optional[str]
+    style_description: Optional[str]
     status: str
     created_at: datetime
     updated_at: datetime

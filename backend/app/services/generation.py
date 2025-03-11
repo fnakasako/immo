@@ -37,6 +37,10 @@ class GenerationCoordinator:
             # Get content record
             content = await self._get_content(content_id)
             
+            # Update status
+            content.status = GenerationStatus.GENERATING_OUTLINE
+            await self.db_session.commit()
+            
             # Generate outline
             outline = await self.ai_service.generate_outline(
                 description=content.description,
@@ -44,21 +48,14 @@ class GenerationCoordinator:
                 sections_count=content.sections_count
             )
             
-            # Update content with outline
+            # Update content with outline only
             content.title = outline['title']
             content.outline = outline['outline']
             content.status = GenerationStatus.OUTLINE_COMPLETED
             await self.db_session.commit()
             
-            # Create section records
-            await self._create_section_records(content_id, outline['sections'])
-            
-            return {
-                "title": outline['title'],
-                "outline": outline['outline'],
-                "sections": outline['sections']
-            }
-            
+            return outline
+                
         except Exception as e:
             # Handle failures
             content = await self._get_content(content_id)
@@ -70,23 +67,30 @@ class GenerationCoordinator:
     async def generate_sections(self, content_id: UUID):
         """Generate section summaries and details"""
         try:
-            # Get content and sections
+            # Get content record
             content = await self._get_content(content_id)
-            sections = await self._get_sections(content_id)
+            
+            # Ensure outline exists
+            if not content.title or not content.outline:
+                raise ValueError("Content must have a title and outline before generating sections")
             
             # Update content status
             content.status = GenerationStatus.PROCESSING_SECTIONS
             await self.db_session.commit()
             
-            # Process each section to update summaries if needed
-            # In this implementation, sections are already created with summaries from the outline
-            # This method exists as a placeholder for future enhancements or if you want to
-            # generate more detailed section information
+            # Generate sections using the AI service
+            sections_data = await self.ai_service.generate_sections(
+                content_title=content.title,
+                content_outline=content.outline,
+                style=content.style,
+                sections_count=content.sections_count
+            )
             
-            # Mark sections as ready for scene generation
-            for section in sections:
-                section.status = SectionStatus.READY_FOR_SCENES
+            # Create section records
+            await self._create_section_records(content_id, sections_data)
             
+            # Update content status
+            content.status = GenerationStatus.SECTIONS_COMPLETED
             await self.db_session.commit()
             
             return await self.get_sections(content_id)
@@ -297,6 +301,7 @@ class GenerationCoordinator:
                 number=i+1,
                 title=section_data['title'],
                 summary=section_data['summary'],
+                style_description=section_data.get('style_description', 'Standard style'),
                 status=SectionStatus.PENDING
             )
             self.db_session.add(section)

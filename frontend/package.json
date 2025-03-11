@@ -4,9 +4,14 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@reduxjs/toolkit": "^2.6.1",
+    "@types/axios": "^0.9.36",
+    "@types/react-router-dom": "^5.3.3",
+    "axios": "^1.8.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "axios": "^1.6.2"
+    "react-redux": "^9.2.0",
+    "react-router-dom": "^7.3.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

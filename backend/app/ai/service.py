@@ -118,7 +118,83 @@ class AIService:
         except Exception as e:
             logger.error(f"Unexpected error in generate_outline: {str(e)}")
             raise AIServiceException(f"Failed to generate outline: {str(e)}")
-    
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=4, max=30),
+        retry=retry_if_exception_type(
+            (anthropic.APITimeoutError, anthropic.APIConnectionError, anthropic.RateLimitError)
+        )
+    )
+    async def generate_sections(self, content_title: str, content_outline: str, 
+                            style: str = None, sections_count: int = 5,
+                            style_params: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """
+        Generate detailed sections for content
+        
+        Args:
+            content_title: Title of the content
+            content_outline: Overall content outline
+            style: Optional writing style preference
+            sections_count: Number of sections to generate
+            style_params: Optional style parameters for each section
+            
+        Returns:
+            List of section dictionaries with titles and summaries
+        """
+        try:
+            style_instruction = PromptTemplates.get_style_instruction(style)
+            
+            prompt = PromptTemplates.SECTIONS_TEMPLATE.substitute(
+                content_title=content_title,
+                content_outline=content_outline,
+                style_instruction=style_instruction,
+                sections_count=sections_count,
+                style_params=json.dumps(style_params) if style_params else "{}"
+            )
+            
+            response = await self.client.messages.create(
+                model=self.model,
+                system="You are a professional content creator.",
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=self.temperature_outline,
+                max_tokens=4000
+            )
+            
+            content = response.content[0].text
+            sections_data = json.loads(content)
+            
+            # Validate response structure
+            if not isinstance(sections_data, list) and 'sections' in sections_data:
+                sections_data = sections_data['sections']  # Handle if AI wraps in a container object
+                
+            if not isinstance(sections_data, list):
+                raise AIServiceException("Sections must be returned as a list")
+            
+            # Validate each section has required fields
+            for i, section in enumerate(sections_data):
+                if not isinstance(section, dict):
+                    raise AIServiceException(f"Section {i+1} is not a dictionary")
+                if 'title' not in section:
+                    raise AIServiceException(f"Section {i+1} missing title")
+                if 'summary' not in section:
+                    raise AIServiceException(f"Section {i+1} missing summary")
+            
+            logger.info(f"Successfully generated {len(sections_data)} sections")
+            return sections_data
+            
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(f"Failed to parse AI response: {str(e)}")
+            raise AIServiceException(f"Invalid response format from AI service: {str(e)}")
+        except anthropic.AuthenticationError as e:
+            logger.error(f"Authentication error in generate_sections: {str(e)}")
+            raise AIServiceException("Authentication failed: Invalid API key or credentials")
+        except Exception as e:
+            logger.error(f"Unexpected error in generate_sections: {str(e)}")
+            raise AIServiceException(f"Failed to generate sections: {str(e)}")
+        
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=30),

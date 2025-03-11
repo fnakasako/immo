@@ -190,7 +190,7 @@ async def generate_sections(
     background_tasks: BackgroundTasks,
     coordinator: GenerationCoordinator = Depends(get_generation_service)
 ):
-    """Generate sections for content"""
+    """Generate sections for content with summaries and styling descriptions"""
     try:
         # Schedule section generation in background
         background_tasks.add_task(
@@ -201,10 +201,15 @@ async def generate_sections(
         # Return current sections
         return await coordinator.get_sections(content_id)
     except ValueError as e:
-        if "credentials" in str(e).lower() or "authentication" in str(e).lower() or "unauthorized" in str(e).lower():
+        if "credentials" in str(e).lower() or "authentication" in str(e).lower():
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid API key. Please check your Anthropic API key configuration."
+                detail="Invalid API key."
+            )
+        elif "outline" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Outline must be generated before creating sections."
             )
         else:
             raise HTTPException(
