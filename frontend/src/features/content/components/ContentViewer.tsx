@@ -10,7 +10,7 @@ import ProgressTracker from './ProgressTracker';
 import SectionView from '@/features/sections/components/SectionView';
 import { 
   ContentUpdateRequest,
-  GenerationStatus
+  SectionResponse
 } from '@/types';
 import { ROUTES } from '@/app/routes';
 import './ContentViewer.css';
@@ -51,19 +51,47 @@ const ContentViewer: React.FC = () => {
   useEffect(() => {
     if (id) {
       getContentById(id);
+    }
+  }, [id, getContentById]);
+  
+  // Setup polling for content updates
+  useEffect(() => {
+    // Only start polling if content exists and is not in a final state
+    const statusStr = String(content?.status || '');
+    if (id && content && 
+        !statusStr.includes('COMPLETED') && 
+        !statusStr.includes('completed') && 
+        !statusStr.includes('FAILED') && 
+        !statusStr.includes('failed')) {
+      // Clear any existing interval first
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
       
-      // Start polling for updates
+      // Start a new polling interval
       const interval = setInterval(() => {
-        if (id) getContentById(id);
+        getContentById(id);
       }, 3000);
       
       setPollingInterval(interval);
       
+      // Clean up on unmount or when dependencies change
       return () => {
-        if (interval) clearInterval(interval);
+        clearInterval(interval);
+        setPollingInterval(null);
       };
+    } else if (pollingInterval && content) {
+      const statusStr = String(content.status || '');
+      if (statusStr.includes('COMPLETED') || 
+          statusStr.includes('completed') || 
+          statusStr.includes('FAILED') || 
+          statusStr.includes('failed')) {
+        // If we have a polling interval but content is in a final state, clear it
+        clearInterval(pollingInterval);
+        setPollingInterval(null);
+      }
     }
-  }, [id, getContentById]);
+  }, [id, content, pollingInterval, getContentById]);
 
   // Handle content status changes
   useEffect(() => {
@@ -73,24 +101,27 @@ const ContentViewer: React.FC = () => {
       setEditedOutline(content.outline || '');
       
       // Load sections for various states
-      if ([
-        GenerationStatus.OUTLINE_COMPLETED,
-        GenerationStatus.SECTIONS_COMPLETED,
-        GenerationStatus.SCENES_COMPLETED,
-        GenerationStatus.PROCESSING_PROSE,
-        GenerationStatus.COMPLETED, 
-        GenerationStatus.PARTIALLY_COMPLETED, 
-        GenerationStatus.FAILED
-      ].includes(content.status as GenerationStatus) && id) {
+      const statusStr = String(content.status || '');
+      if ((statusStr.includes('OUTLINE_COMPLETED') || 
+           statusStr.includes('outline_completed') ||
+           statusStr.includes('SECTIONS_COMPLETED') || 
+           statusStr.includes('sections_completed') ||
+           statusStr.includes('SCENES_COMPLETED') || 
+           statusStr.includes('scenes_completed') ||
+           statusStr.includes('PROCESSING_PROSE') || 
+           statusStr.includes('processing_prose') ||
+           statusStr.includes('COMPLETED') || 
+           statusStr.includes('completed') ||
+           statusStr.includes('FAILED') || 
+           statusStr.includes('failed')) && id) {
         getSections(id);
       }
       
       // Stop polling when in a final state
-      if ([
-        GenerationStatus.COMPLETED, 
-        GenerationStatus.PARTIALLY_COMPLETED, 
-        GenerationStatus.FAILED
-      ].includes(content.status as GenerationStatus)) {
+      if (statusStr.includes('COMPLETED') || 
+          statusStr.includes('completed') || 
+          statusStr.includes('FAILED') || 
+          statusStr.includes('failed')) {
         if (pollingInterval) {
           clearInterval(pollingInterval);
           setPollingInterval(null);
@@ -98,6 +129,14 @@ const ContentViewer: React.FC = () => {
       }
     }
   }, [content?.status, id, getSections, pollingInterval]);
+  
+  // Stop polling when an error occurs
+  useEffect(() => {
+    if (contentError && pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+  }, [contentError, pollingInterval]);
 
   const handleCreateNew = () => {
     navigate(ROUTES.CONTENT_CREATE);
@@ -162,7 +201,11 @@ const ContentViewer: React.FC = () => {
       <div className="error-container">
         <h3>Error</h3>
         <p>{contentError}</p>
-        <button onClick={handleCreateNew}>Create New Content</button>
+        {contentError.includes('Authentication failed') ? (
+          <button onClick={() => window.location.href = '/login'}>Log In Again</button>
+        ) : (
+          <button onClick={handleCreateNew}>Create New Content</button>
+        )}
       </div>
     );
   }
@@ -180,17 +223,14 @@ const ContentViewer: React.FC = () => {
         </button>
       </header>
       
-      <ProgressTracker 
-        content={content} 
-        onRetry={handleCreateNew} 
-      />
       
       {/* Outline Section */}
       <div className="content-outline-section">
         <div className="section-header">
           <h3>Content Overview</h3>
           <div className="section-actions">
-            {content.status === GenerationStatus.PENDING && (
+            {(String(content.status).includes("PENDING") || 
+              String(content.status).includes("pending")) && (
               <button 
                 className="action-button"
                 onClick={handleGenerateOutline}
@@ -267,7 +307,8 @@ const ContentViewer: React.FC = () => {
       </div>
       
       {/* Sections Generation Button */}
-      {content.status === GenerationStatus.OUTLINE_COMPLETED && (
+      {(String(content.status).includes("OUTLINE_COMPLETED") || 
+        String(content.status).includes("outline_completed")) && (
         <div className="generation-controls">
           <button 
             className="generate-button"
@@ -286,7 +327,8 @@ const ContentViewer: React.FC = () => {
             <h3>Sections</h3>
             
             {/* Scene Generation Controls */}
-            {content.status === GenerationStatus.SECTIONS_COMPLETED && (
+            {(String(content.status).includes("SECTIONS_COMPLETED") || 
+              String(content.status).includes("sections_completed")) && (
               <div className="scene-generation-controls">
                 <button 
                   className="generate-button"
@@ -299,9 +341,10 @@ const ContentViewer: React.FC = () => {
             )}
           </div>
           
-          {sections.map(section => (
+          {sections.map((section: SectionResponse) => (
             <div key={section.number} className="section-item-container">
-              {content.status === GenerationStatus.SECTIONS_COMPLETED && (
+              {(String(content.status).includes("SECTIONS_COMPLETED") || 
+                String(content.status).includes("sections_completed")) && (
                 <div className="section-checkbox">
                   <input
                     type="checkbox"

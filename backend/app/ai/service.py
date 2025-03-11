@@ -34,6 +34,7 @@ class AIService:
         else:
             logger.error("No API key provided to AIService")
             
+        # Initialize the Anthropic client
         self.client = anthropic.AsyncAnthropic(api_key=self.api_key)
         self.model = model
         self.max_retries = 3

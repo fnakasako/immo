@@ -16,7 +16,7 @@ import SectionView from '@/features/sections/components/SectionView';
 import SceneView from '@/features/scenes/components/SceneView';
 
 // Import styles
-import '@/styles/App.css';
+import '@/App.css';
 
 const App: React.FC = () => {
   return (

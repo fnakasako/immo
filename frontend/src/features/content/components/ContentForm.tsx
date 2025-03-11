@@ -9,14 +9,6 @@ import { ContentGenerationRequest, StyleOption } from '@/types';
 import { generatePath } from '@/app/routes';
 import './ContentForm.css';
 
-// Style options for the form
-const styleOptions: StyleOption[] = [
-  { value: 'literary', label: 'Literary Fiction' },
-  { value: 'thriller', label: 'Thriller' },
-  { value: 'fantasy', label: 'Fantasy' },
-  { value: 'sci-fi', label: 'Science Fiction' },
-  { value: 'historical', label: 'Historical Fiction' }
-];
 
 const ContentForm: React.FC = () => {
   const navigate = useNavigate();
@@ -24,8 +16,6 @@ const ContentForm: React.FC = () => {
   
   const [formData, setFormData] = useState<ContentGenerationRequest>({
     description: '',
-    style: 'literary',
-    sections_count: 5,
     model: 'default'
   });
 
@@ -88,36 +78,7 @@ const ContentForm: React.FC = () => {
         </p>
       </div>
       
-      <div className="form-group">
-        <label htmlFor="style">Writing Style</label>
-        <select
-          id="style"
-          name="style"
-          value={formData.style}
-          onChange={handleChange}
-          disabled={loading}
-        >
-          {styleOptions.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
       
-      <div className="form-group">
-        <label htmlFor="sections_count">Number of Sections</label>
-        <input
-          type="number"
-          id="sections_count"
-          name="sections_count"
-          value={formData.sections_count}
-          onChange={handleChange}
-          min={2}
-          max={10}
-          disabled={loading}
-        />
-      </div>
       
       <button 
         type="submit" 

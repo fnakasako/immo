@@ -121,7 +121,7 @@ export class AbortError extends Error {
 export function getUserFriendlyErrorMessage(error: Error): string {
   if (error instanceof ApiError) {
     if (error.isAuthError()) {
-      return 'You are not authenticated. Please log in and try again.';
+      return 'Authentication failed. Please log in again to continue.';
     } else if (error.isForbiddenError()) {
       return 'You do not have permission to perform this action.';
     } else if (error.isNotFoundError()) {

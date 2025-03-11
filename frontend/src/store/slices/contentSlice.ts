@@ -4,6 +4,7 @@
  */
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { contentApi } from '@/features/content/api/contentApi';
+import { getUserFriendlyErrorMessage } from '@/services/api/errors';
 import { 
   ContentGenerationResponse, 
   ContentGenerationRequest,
@@ -66,15 +67,31 @@ export const updateOutline = createAsyncThunk(
 
 export const generateSections = createAsyncThunk(
   'content/generateSections',
-  async (contentId: string) => {
-    return await contentApi.generateSections(contentId);
+  async (contentId: string, { dispatch }) => {
+    try {
+      const sectionsResponse = await contentApi.generateSections(contentId);
+      // Fetch the updated content status after generating sections
+      await dispatch(fetchContentById(contentId)).unwrap();
+      return sectionsResponse;
+    } catch (error) {
+      // Re-throw the error to be caught by the rejected case
+      throw error;
+    }
   }
 );
 
 export const generateScenes = createAsyncThunk(
   'content/generateScenes',
-  async ({ contentId, sectionNumbers }: { contentId: string; sectionNumbers: number[] }) => {
-    return await contentApi.generateScenes(contentId, sectionNumbers);
+  async ({ contentId, sectionNumbers }: { contentId: string; sectionNumbers: number[] }, { dispatch }) => {
+    try {
+      const scenesResponse = await contentApi.generateScenes(contentId, sectionNumbers);
+      // Fetch the updated content status after generating scenes
+      await dispatch(fetchContentById(contentId)).unwrap();
+      return scenesResponse;
+    } catch (error) {
+      // Re-throw the error to be caught by the rejected case
+      throw error;
+    }
   }
 );
 
@@ -116,7 +133,9 @@ const contentSlice = createSlice({
     });
     builder.addCase(fetchContentById.rejected, (state, action) => {
       state.loading = false;
-      state.error = action.error.message || 'Failed to fetch content';
+      state.error = action.error.message ? 
+        getUserFriendlyErrorMessage(new Error(action.error.message)) : 
+        'Failed to fetch content';
     });
 
     // Handle createContent
@@ -175,12 +194,9 @@ const contentSlice = createSlice({
         state.currentContent.status = GenerationStatus.PROCESSING_SECTIONS;
       }
     });
-    builder.addCase(generateSections.fulfilled, (state, action) => {
-      state.loading = false;
-      // The response is SectionListResponse, but we need to update the content status
-      if (state.currentContent) {
-        state.currentContent.status = GenerationStatus.SECTIONS_COMPLETED;
-      }
+    builder.addCase(generateSections.fulfilled, (state) => {
+      // Don't set loading to false here as we're fetching content in the thunk
+      // The content status will be updated when fetchContentById completes
     });
     builder.addCase(generateSections.rejected, (state, action) => {
       state.loading = false;
@@ -198,12 +214,9 @@ const contentSlice = createSlice({
         state.currentContent.status = GenerationStatus.PROCESSING_SCENES;
       }
     });
-    builder.addCase(generateScenes.fulfilled, (state, action) => {
-      state.loading = false;
-      // The response is SectionListResponse, but we need to update the content status
-      if (state.currentContent) {
-        state.currentContent.status = GenerationStatus.SCENES_COMPLETED;
-      }
+    builder.addCase(generateScenes.fulfilled, (state) => {
+      // Don't set loading to false here as we're fetching content in the thunk
+      // The content status will be updated when fetchContentById completes
     });
     builder.addCase(generateScenes.rejected, (state, action) => {
       state.loading = false;

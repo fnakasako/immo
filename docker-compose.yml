@@ -28,7 +28,7 @@ services:
       - LOG_LEVEL=debug
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/immo
       # Set the API key directly instead of using the environment variable
-      - ANTHROPIC_API_KEY=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
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     volumes:
       - ./backend:/app
     networks:

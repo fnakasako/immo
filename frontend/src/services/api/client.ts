@@ -48,7 +48,7 @@ const DEFAULT_RETRY_DELAY = 300; // 300ms, doubles each retry
  */
 const handleApiError = (error: any): never => {
   // Handle Axios errors
-  if (axios.isAxiosError(error)) {
+  if (error && error.isAxiosError) {
     const axiosError = error as AxiosError;
     
     // Handle network errors
@@ -76,7 +76,16 @@ const handleApiError = (error: any): never => {
     
     const errorMessage = errorData.detail || errorData.message || axiosError.message || 'Unknown error occurred';
     
-    throw new ApiError(errorMessage, status, errorData);
+    // Create ApiError with the appropriate status code and data
+    const apiError = new ApiError(errorMessage, status, errorData);
+    
+    // For authentication errors, log the user out or handle specially
+    if (apiError.isAuthError()) {
+      console.error('Authentication error detected:', errorMessage);
+      // You could dispatch a logout action here if needed
+    }
+    
+    throw apiError;
   }
   
   // Handle abort errors
@@ -125,9 +134,10 @@ export const apiRequest = {
         headers: { 'Content-Type': 'application/json' },
         ...config
       });
-      return response.data;
+      return response.data as T;
     } catch (error) {
-      return handleApiError(error) as Promise<T>;
+      handleApiError(error); // This will always throw, never returns
+      throw error; // TypeScript needs this, but it's never reached
     }
   },
   
@@ -137,9 +147,10 @@ export const apiRequest = {
         headers: { 'Content-Type': 'application/json' },
         ...config
       });
-      return response.data;
+      return response.data as T;
     } catch (error) {
-      return handleApiError(error) as Promise<T>;
+      handleApiError(error); // This will always throw, never returns
+      throw error; // TypeScript needs this, but it's never reached
     }
   },
   
@@ -149,9 +160,10 @@ export const apiRequest = {
         headers: { 'Content-Type': 'application/json' },
         ...config
       });
-      return response.data;
+      return response.data as T;
     } catch (error) {
-      return handleApiError(error) as Promise<T>;
+      handleApiError(error); // This will always throw, never returns
+      throw error; // TypeScript needs this, but it's never reached
     }
   },
   
@@ -161,9 +173,10 @@ export const apiRequest = {
         headers: { 'Content-Type': 'application/json' },
         ...config
       });
-      return response.data;
+      return response.data as T;
     } catch (error) {
-      return handleApiError(error) as Promise<T>;
+      handleApiError(error); // This will always throw, never returns
+      throw error; // TypeScript needs this, but it's never reached
     }
   }
 };
