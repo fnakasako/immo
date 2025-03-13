@@ -2,7 +2,7 @@
 import json
 import asyncio
 import logging
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any, Union, AsyncGenerator
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import anthropic
 from app.core.config import settings
@@ -21,7 +21,7 @@ class ContentModerationException(AIServiceException):
 class AIService:
     """Service for generating content using AI"""
     
-    def __init__(self, api_key: str = None, model: str = "claude-3-sonnet-20240229"):
+    def __init__(self, api_key: str = "None", model: str = "claude-3-sonnet-20240229"):
         """Initialize with API key and model"""
         self.api_key = api_key or settings.ANTHROPIC_API_KEY
         # Log the first few characters of the API key for debugging
@@ -374,6 +374,76 @@ class AIService:
                 raise AIServiceException(f"Section {i+1} missing title")
             if 'summary' not in section:
                 raise AIServiceException(f"Section {i+1} missing summary")
+    
+    async def stream_generation(self, prompt: str, system_prompt: str = "You are a professional content creator.", 
+                               temperature: float = None, max_tokens: int = 4000) -> AsyncGenerator[str, None]:
+        """
+        Stream generation results from the AI model
+        
+        Args:
+            prompt: The prompt to send to the model
+            system_prompt: The system prompt to use
+            temperature: Temperature for generation (defaults to prose temperature)
+            max_tokens: Maximum tokens to generate
+            
+        Yields:
+            Chunks of generated text as they become available
+        """
+        try:
+            # Use default temperature if not specified
+            if temperature is None:
+                temperature = self.temperature_prose
+                
+            logger.info(f"Starting streaming generation with prompt: {prompt[:100]}...")
+            
+            async with anthropic.AsyncStream(
+                client=self.client,
+                model=self.model,
+                system=system_prompt,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
+                max_tokens=max_tokens
+            ) as stream:
+                async for chunk in stream:
+                    if chunk.delta.text:
+                        yield chunk.delta.text
+                        
+            logger.info("Streaming generation completed")
+            
+        except anthropic.AuthenticationError as e:
+            logger.error(f"Authentication error in stream_generation: {str(e)}")
+            raise AIServiceException("Authentication failed: Invalid API key or credentials")
+        except Exception as e:
+            logger.error(f"Error in stream_generation: {str(e)}")
+            raise AIServiceException(f"Failed to stream generation: {str(e)}")
+    
+    async def stream_outline(self, description: str, style: str = None, 
+                           sections_count: int = 5) -> AsyncGenerator[str, None]:
+        """
+        Stream the generation of a content outline
+        
+        Args:
+            description: Content description from user
+            style: Optional writing style preference
+            sections_count: Number of sections to generate
+            
+        Yields:
+            Chunks of the generated outline as they become available
+        """
+        style_instruction = PromptTemplates.get_style_instruction(style)
+        
+        prompt = PromptTemplates.OUTLINE_TEMPLATE.substitute(
+            description=description,
+            style_instruction=style_instruction,
+            sections_count=sections_count
+        )
+        
+        async for chunk in self.stream_generation(
+            prompt=prompt,
+            system_prompt="You are a professional content creator.",
+            temperature=self.temperature_outline
+        ):
+            yield chunk
     
     def _validate_scene_structure(self, scene: Dict[str, Any], index: int) -> None:
         """Validate scene has required fields"""

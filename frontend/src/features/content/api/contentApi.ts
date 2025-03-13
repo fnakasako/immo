@@ -39,9 +39,11 @@ export const contentApi = {
   
   /**
    * Generate sections for content
+   * @param contentId The ID of the content
+   * @param numSections Optional number of sections to generate
    */
-  generateSections: (contentId: string): Promise<SectionListResponse> => 
-    apiRequest.post(ENDPOINTS.CONTENT.GENERATE_SECTIONS(contentId)),
+  generateSections: (contentId: string, numSections?: number): Promise<SectionListResponse> => 
+    apiRequest.post(ENDPOINTS.CONTENT.GENERATE_SECTIONS(contentId), numSections ? { numSections } : undefined),
   
   /**
    * Generate scenes for selected sections

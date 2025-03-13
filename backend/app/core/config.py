@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     print(f"Loaded ANTHROPIC_API_KEY from environment: {'Yes' if ANTHROPIC_API_KEY else 'No'}")
     if ANTHROPIC_API_KEY:
         print(f"API key starts with: {ANTHROPIC_API_KEY[:10]}...")
-    DEFAULT_MODEL: str = "claude-3-sonnet"
+    DEFAULT_MODEL: str = "claude-3-haiku-20240307"
     MAX_CHAPTERS: int = 10
 
     # Environment Configuration

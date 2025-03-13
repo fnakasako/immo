@@ -55,8 +55,8 @@ export const useContent = () => {
   }, [dispatch]);
 
   // Generate sections
-  const generateContentSections = useCallback((contentId: string) => {
-    return dispatch(generateSections(contentId));
+  const generateContentSections = useCallback((contentId: string, numSections?: number) => {
+    return dispatch(generateSections({ contentId, numSections }));
   }, [dispatch]);
 
   // Generate scenes

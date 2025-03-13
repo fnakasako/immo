@@ -114,7 +114,7 @@ class GenerationCoordinator:
             
             raise
     
-    async def _generate_sections_task(self, session, content_id: UUID):
+    async def _generate_sections_task(self, session, content_id: UUID, num_sections: int = None):
         """Background task to generate sections for content"""
         from sqlalchemy import select
         from app.models.orm.content import ContentGenerationRecord, Section as ContentSection
@@ -135,22 +135,31 @@ class GenerationCoordinator:
         content.status = GenerationStatus.PROCESSING_SECTIONS
         await session.commit()
         
+        # Use provided number of sections if available, otherwise use default from content
+        sections_count = num_sections if num_sections is not None else content.sections_count
+        
         # Generate sections using the AI service
         sections_data = await self.ai_service.generate_sections(
             content_title=content.title,
             content_outline=content.outline,
             style=content.style,
-            sections_count=content.sections_count
+            sections_count=sections_count
         )
         
         # Create section records
         for i, section_data in enumerate(sections_data):
+            # Infer style from content outline if not provided
+            style_description = section_data.get('style_description')
+            if not style_description:
+                # Use content style or infer from outline
+                style_description = f"Style inferred from content outline: {content.style or 'Standard style'}"
+                
             section = ContentSection(
                 content_id=content_id,
                 number=i+1,
                 title=section_data['title'],
                 summary=section_data['summary'],
-                style_description=section_data.get('style_description', 'Standard style'),
+                style_description=style_description,
                 status=SectionStatus.PENDING
             )
             session.add(section)
@@ -185,13 +194,14 @@ class GenerationCoordinator:
             "total": len(sections)
         }
     
-    async def generate_sections(self, content_id: UUID):
+    async def generate_sections(self, content_id: UUID, num_sections: int = None):
         """Generate section summaries and details"""
         try:
             # Run the task in the background with its own session
             return await self._run_background_task(
                 self._generate_sections_task,
-                content_id
+                content_id,
+                num_sections
             )
         except Exception as e:
             # Log the error

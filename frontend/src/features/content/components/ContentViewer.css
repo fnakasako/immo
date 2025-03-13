@@ -153,6 +153,28 @@
 /* Generation Controls */
 .generation-controls {
   margin: 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.section-count-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-count-control label {
+  font-weight: bold;
+  color: #495057;
+}
+
+.section-count-control input {
+  width: 60px;
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
   text-align: center;
 }
 

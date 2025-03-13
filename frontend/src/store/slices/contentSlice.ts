@@ -67,9 +67,9 @@ export const updateOutline = createAsyncThunk(
 
 export const generateSections = createAsyncThunk(
   'content/generateSections',
-  async (contentId: string, { dispatch }) => {
+  async ({ contentId, numSections }: { contentId: string; numSections?: number }, { dispatch }) => {
     try {
-      const sectionsResponse = await contentApi.generateSections(contentId);
+      const sectionsResponse = await contentApi.generateSections(contentId, numSections);
       // Fetch the updated content status after generating sections
       await dispatch(fetchContentById(contentId)).unwrap();
       return sectionsResponse;

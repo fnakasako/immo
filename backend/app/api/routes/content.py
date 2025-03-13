@@ -188,6 +188,7 @@ async def update_outline(
 async def generate_sections(
     content_id: UUID,
     background_tasks: BackgroundTasks,
+    numSections: int = None,
     coordinator: GenerationCoordinator = Depends(get_generation_service)
 ):
     """Generate sections for content with summaries and styling descriptions"""
@@ -195,7 +196,8 @@ async def generate_sections(
         # Schedule section generation in background
         background_tasks.add_task(
             coordinator.generate_sections,
-            content_id=content_id
+            content_id=content_id,
+            num_sections=numSections
         )
         
         # Return current sections

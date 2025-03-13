@@ -1,6 +1,28 @@
 # app/models/enums.py
 from enum import Enum
 
+class ContentStatus(str, Enum):
+    """Simplified status for content generation"""
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"  # Generic processing state
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+class SectionStatus(str, Enum):
+    """Simplified status for section generation"""
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"  # Generic processing state
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+class SceneStatus(str, Enum):
+    """Simplified status for scene generation"""
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"  # Generic processing state
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+# Keep the original enums for backward compatibility during migration
 class GenerationStatus(str, Enum):
     PENDING = "PENDING"
     PROCESSING_OUTLINE = "PROCESSING_OUTLINE"
@@ -12,20 +34,4 @@ class GenerationStatus(str, Enum):
     PROCESSING_PROSE = "PROCESSING_PROSE"
     COMPLETED = "COMPLETED"
     PARTIALLY_COMPLETED = "PARTIALLY_COMPLETED"
-    FAILED = "FAILED"
-
-class SectionStatus(str, Enum):
-    PENDING = "PENDING"
-    READY_FOR_SCENES = "READY_FOR_SCENES"
-    GENERATING_SCENES = "GENERATING_SCENES"
-    SCENES_COMPLETED = "SCENES_COMPLETED"
-    PROCESSING_SCENES = "PROCESSING_SCENES"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
-
-class SceneStatus(str, Enum):
-    PENDING = "PENDING"
-    READY_FOR_PROSE = "READY_FOR_PROSE"
-    GENERATING = "GENERATING"
-    COMPLETED = "COMPLETED"
     FAILED = "FAILED"

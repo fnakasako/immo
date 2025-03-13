@@ -39,7 +39,6 @@ class PromptTemplates:
     Based on this outline, generate $sections_count detailed sections. Each section should have:
     1. A clear, descriptive title
     2. A comprehensive summary of what the section will contain
-    3. A style description that explains the writing style, tone, and approach for this specific section
 
     $style_instruction
 
@@ -48,7 +47,7 @@ class PromptTemplates:
       {
         "title": "Section Title",
         "summary": "Detailed summary of the section content",
-        "style_description": "Description of the writing style for this section"
+        "style_description": "Description of the writing style for this section"                         
       },
       ...
     ]
@@ -111,7 +110,6 @@ class PromptTemplates:
     Write an engaging, immersive scene of approximately 500-800 words. Your writing should:
     - Begin with vivid scene-setting that establishes the location and mood
     - Develop characters through dialogue and action
-    - Include sensory details and descriptive elements
     - Advance the plot points specified in the key events
     - Maintain the specified emotional tone throughout
     - End with an appropriate transition to the next scene
@@ -121,7 +119,7 @@ class PromptTemplates:
     
     # Style adaptation dictionary remains the same
     STYLE_ADAPTATION = {
-        "literary": "Write in a literary style with rich imagery, complex characters, and thematic depth. Use elegant prose similar to authors like Toni Morrison or Ian McEwan.",
+        "literary": "Write in a literary style with rich imagery, complex characters, and thematic depth. Use elegant prose similar to authors like Toni Morrison or Haruki Murakami.",
         # Other styles remain the same
     }
     

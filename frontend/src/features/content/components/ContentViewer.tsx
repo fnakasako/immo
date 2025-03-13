@@ -46,6 +46,9 @@ const ContentViewer: React.FC = () => {
   
   // State for section selection
   const [selectedSections, setSelectedSections] = useState<number[]>([]);
+  
+  // State for number of sections
+  const [numSections, setNumSections] = useState<number>(5);
 
   // Load content on mount
   useEffect(() => {
@@ -164,7 +167,7 @@ const ContentViewer: React.FC = () => {
   // Generate sections
   const handleGenerateSections = async () => {
     if (id) {
-      await generateSections(id);
+      await generateSections(id, numSections);
     }
   };
   
@@ -310,6 +313,17 @@ const ContentViewer: React.FC = () => {
       {(String(content.status).includes("OUTLINE_COMPLETED") || 
         String(content.status).includes("outline_completed")) && (
         <div className="generation-controls">
+          <div className="section-count-control">
+            <label htmlFor="numSections">Number of Sections:</label>
+            <input
+              type="number"
+              id="numSections"
+              min="1"
+              max="20"
+              value={numSections}
+              onChange={(e) => setNumSections(Math.max(1, parseInt(e.target.value) || 1))}
+            />
+          </div>
           <button 
             className="generate-button"
             onClick={handleGenerateSections}

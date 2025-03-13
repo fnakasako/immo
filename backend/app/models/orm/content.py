@@ -38,6 +38,7 @@ class Section(Base):
     number = Column(Integer, nullable=False)
     title = Column(String, nullable=False)
     summary = Column(Text, nullable=True)
+    style_description = Column(Text, nullable=True)
     status = Column(Enum(SectionStatus), nullable=False, default=SectionStatus.PENDING)
     error = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
