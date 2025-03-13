@@ -1,10 +1,12 @@
 # app/api/routes/content.py
+import json
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from typing import List
 
-from app.api.dependencies import get_db, get_generation_service
+from app.api.dependencies import get_db, get_generation_service, get_content_service
 from app.models.schemas import (
     ContentGenerationRequest, 
     ContentGenerationResponse,
@@ -18,8 +20,9 @@ from app.models.schemas import (
     GenerationSelectionRequest
 )
 from app.models.orm.content import ContentGenerationRecord
-from app.models.enums import GenerationStatus
-from app.services.generation import GenerationCoordinator
+from app.models.enums import GenerationStatus, ContentStatus
+from app.services.generation import GenerationService
+from app.services.content import ContentService
 
 router = APIRouter(tags=["content"])
 
@@ -29,15 +32,31 @@ router = APIRouter(tags=["content"])
 async def create_content(
     request: ContentGenerationRequest,
     db: AsyncSession = Depends(get_db),
-    coordinator: GenerationCoordinator = Depends(get_generation_service)
+    generation_service: GenerationService = Depends(get_generation_service),
+    content_service: ContentService = Depends(get_content_service)
 ):
     """Create a new content record without starting generation"""
     try:
         # Create content record and return ID
-        content_id = await coordinator.create_story(request)
+        content_id = await generation_service.create_content(request)
         
-        # Return initial content info
-        return await coordinator.get_content_info(content_id)
+        # Get content info
+        content = await content_service.get_content(content_id)
+        
+        # Convert to response format
+        return {
+            "id": content.id,
+            "description": content.description,
+            "sections_count": content.sections_count,
+            "style": content.style,
+            "model": "default",
+            "status": content.status.value if hasattr(content, 'status') else "PENDING",
+            "progress": 0.0,
+            "title": content.title,
+            "outline": content.outline,
+            "created_at": content.created_at,
+            "updated_at": content.updated_at
+        }
     except ValueError as e:
         # Handle validation errors
         if "credentials" in str(e).lower() or "authentication" in str(e).lower() or "unauthorized" in str(e).lower():
@@ -73,7 +92,7 @@ async def create_content(
 async def list_content(
     skip: int = 0,
     limit: int = 10,
-    db: AsyncSession = Depends(get_db)
+    content_service: ContentService = Depends(get_content_service)
 ):
     """
     List all content generation records.
@@ -81,33 +100,7 @@ async def list_content(
     Returns a paginated list of content ordered by creation date.
     """
     try:
-        from sqlalchemy import select, desc
-        
-        query = select(ContentGenerationRecord).order_by(
-            desc(ContentGenerationRecord.created_at)
-        ).offset(skip).limit(limit)
-        
-        result = await db.execute(query)
-        content_list = result.scalars().all()
-        
-        # Convert ORM objects to dictionaries for serialization
-        content_dicts = []
-        for content in content_list:
-            content_dicts.append({
-                "id": content.id,
-                "description": content.description,
-                "sections_count": content.sections_count,
-                "style": content.style,
-                "model": "default",
-                "status": content.status.value,
-                "progress": 100.0 if content.status == GenerationStatus.COMPLETED else 0.0,
-                "title": content.title,
-                "outline": content.outline,
-                "created_at": content.created_at,
-                "updated_at": content.updated_at
-            })
-        
-        return content_dicts
+        return await content_service.list_content(skip, limit)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -119,18 +112,34 @@ async def list_content(
 async def generate_outline(
     content_id: UUID,
     background_tasks: BackgroundTasks,
-    coordinator: GenerationCoordinator = Depends(get_generation_service)
+    generation_service: GenerationService = Depends(get_generation_service),
+    content_service: ContentService = Depends(get_content_service)
 ):
     """Generate outline for content"""
     try:
         # Schedule outline generation in background
         background_tasks.add_task(
-            coordinator.generate_outline,
+            generation_service.generate_outline,
             content_id=content_id
         )
         
-        # Return current content info
-        return await coordinator.get_content_info(content_id)
+        # Get content info
+        content = await content_service.get_content(content_id)
+        
+        # Convert to response format
+        return {
+            "id": content.id,
+            "description": content.description,
+            "sections_count": content.sections_count,
+            "style": content.style,
+            "model": "default",
+            "status": content.status.value if hasattr(content, 'status') else "PENDING",
+            "progress": await content_service._calculate_progress(content),
+            "title": content.title,
+            "outline": content.outline,
+            "created_at": content.created_at,
+            "updated_at": content.updated_at
+        }
     except ValueError as e:
         if "credentials" in str(e).lower() or "authentication" in str(e).lower() or "unauthorized" in str(e).lower():
             raise HTTPException(
@@ -153,25 +162,34 @@ async def generate_outline(
 async def update_outline(
     content_id: UUID,
     request: ContentUpdateRequest,
-    db: AsyncSession = Depends(get_db),
-    coordinator: GenerationCoordinator = Depends(get_generation_service)
+    content_service: ContentService = Depends(get_content_service)
 ):
     """Update content outline"""
     try:
-        # Get content record
-        content = await coordinator._get_content(content_id)
-        
-        # Update fields if provided
+        # Prepare update data
+        update_data = {}
         if request.title is not None:
-            content.title = request.title
+            update_data["title"] = request.title
         if request.outline is not None:
-            content.outline = request.outline
+            update_data["outline"] = request.outline
         
-        # Save changes
-        await db.commit()
+        # Update content
+        content = await content_service.update_content(content_id, update_data)
         
-        # Return updated content info
-        return await coordinator.get_content_info(content_id)
+        # Convert to response format
+        return {
+            "id": content.id,
+            "description": content.description,
+            "sections_count": content.sections_count,
+            "style": content.style,
+            "model": "default",
+            "status": content.status.value if hasattr(content, 'status') else "PENDING",
+            "progress": await content_service._calculate_progress(content),
+            "title": content.title,
+            "outline": content.outline,
+            "created_at": content.created_at,
+            "updated_at": content.updated_at
+        }
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -189,19 +207,20 @@ async def generate_sections(
     content_id: UUID,
     background_tasks: BackgroundTasks,
     numSections: int = None,
-    coordinator: GenerationCoordinator = Depends(get_generation_service)
+    generation_service: GenerationService = Depends(get_generation_service),
+    content_service: ContentService = Depends(get_content_service)
 ):
     """Generate sections for content with summaries and styling descriptions"""
     try:
         # Schedule section generation in background
         background_tasks.add_task(
-            coordinator.generate_sections,
+            generation_service.generate_sections,
             content_id=content_id,
             num_sections=numSections
         )
         
         # Return current sections
-        return await coordinator.get_sections(content_id)
+        return await content_service.list_sections(content_id)
     except ValueError as e:
         if "credentials" in str(e).lower() or "authentication" in str(e).lower():
             raise HTTPException(
@@ -230,20 +249,21 @@ async def generate_scenes_for_sections(
     content_id: UUID,
     request: GenerationSelectionRequest,
     background_tasks: BackgroundTasks,
-    coordinator: GenerationCoordinator = Depends(get_generation_service)
+    generation_service: GenerationService = Depends(get_generation_service),
+    content_service: ContentService = Depends(get_content_service)
 ):
     """Generate scenes for selected sections"""
     try:
         # Schedule scene generation for each selected section in background
         for section_number in request.items:
             background_tasks.add_task(
-                coordinator.generate_scenes_for_section,
+                generation_service.generate_scenes_for_section,
                 content_id=content_id,
                 section_number=section_number
             )
         
         # Return current sections
-        return await coordinator.get_sections(content_id)
+        return await content_service.list_sections(content_id)
     except ValueError as e:
         if "credentials" in str(e).lower() or "authentication" in str(e).lower() or "unauthorized" in str(e).lower():
             raise HTTPException(
@@ -268,21 +288,25 @@ async def generate_prose_for_scenes(
     section_number: int,
     request: GenerationSelectionRequest,
     background_tasks: BackgroundTasks,
-    coordinator: GenerationCoordinator = Depends(get_generation_service)
+    generation_service: GenerationService = Depends(get_generation_service),
+    content_service: ContentService = Depends(get_content_service)
 ):
     """Generate prose for selected scenes in a section"""
     try:
+        # Get section first to validate it exists
+        section = await content_service.get_section_by_number(content_id, section_number)
+        
         # Schedule prose generation for each selected scene in background
         for scene_number in request.items:
             background_tasks.add_task(
-                coordinator.generate_prose_for_scene,
+                generation_service.generate_prose_for_scene,
                 content_id=content_id,
                 section_number=section_number,
                 scene_number=scene_number
             )
         
         # Return current scenes
-        return await coordinator.get_scenes(content_id, section_number)
+        return await content_service.list_scenes(section.id)
     except ValueError as e:
         if "credentials" in str(e).lower() or "authentication" in str(e).lower() or "unauthorized" in str(e).lower():
             raise HTTPException(
@@ -304,11 +328,30 @@ async def generate_prose_for_scenes(
             response_model=ContentGenerationResponse)
 async def get_content(
     content_id: UUID,
-    coordinator: GenerationCoordinator = Depends(get_generation_service)
+    content_service: ContentService = Depends(get_content_service)
 ):
     """Get content generation status and outline"""
     try:
-        return await coordinator.get_content_info(content_id)
+        # Get content
+        content = await content_service.get_content(content_id)
+        
+        # Calculate progress
+        progress = await content_service._calculate_progress(content)
+        
+        # Convert to response format
+        return {
+            "id": content.id,
+            "description": content.description,
+            "sections_count": content.sections_count,
+            "style": content.style,
+            "model": "default",
+            "status": content.status.value if hasattr(content, 'status') else "PENDING",
+            "progress": progress,
+            "title": content.title,
+            "outline": content.outline,
+            "created_at": content.created_at,
+            "updated_at": content.updated_at
+        }
     except ValueError as e:
         if "credentials" in str(e).lower() or "authentication" in str(e).lower() or "unauthorized" in str(e).lower():
             raise HTTPException(
@@ -330,11 +373,11 @@ async def get_content(
             response_model=SectionListResponse)
 async def get_sections(
     content_id: UUID,
-    coordinator: GenerationCoordinator = Depends(get_generation_service)
+    content_service: ContentService = Depends(get_content_service)
 ):
     """Get all sections for content"""
     try:
-        return await coordinator.get_sections(content_id)
+        return await content_service.list_sections(content_id)
     except ValueError as e:
         if "credentials" in str(e).lower() or "authentication" in str(e).lower() or "unauthorized" in str(e).lower():
             raise HTTPException(
@@ -358,27 +401,27 @@ async def update_section(
     content_id: UUID,
     section_number: int,
     request: SectionUpdateRequest,
-    db: AsyncSession = Depends(get_db),
-    coordinator: GenerationCoordinator = Depends(get_generation_service)
+    content_service: ContentService = Depends(get_content_service)
 ):
     """Update section details"""
     try:
-        # Get section record
-        section = await coordinator._get_section(content_id, section_number)
+        # Get section
+        section = await content_service.get_section_by_number(content_id, section_number)
         
-        # Update fields if provided
+        # Prepare update data
+        update_data = {}
         if request.title is not None:
-            section.title = request.title
+            update_data["title"] = request.title
         if request.summary is not None:
-            section.summary = request.summary
+            update_data["summary"] = request.summary
         if request.content is not None:
-            section.content = request.content
+            update_data["content"] = request.content
         
-        # Save changes
-        await db.commit()
+        # Update section
+        updated_section = await content_service.update_section(section.id, update_data)
         
         # Return updated section
-        return await coordinator.get_section(content_id, section_number)
+        return updated_section
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -395,11 +438,11 @@ async def update_section(
 async def get_section(
     content_id: UUID,
     section_number: int,
-    coordinator: GenerationCoordinator = Depends(get_generation_service)
+    content_service: ContentService = Depends(get_content_service)
 ):
     """Get specific section by number"""
     try:
-        return await coordinator.get_section(content_id, section_number)
+        return await content_service.get_section_by_number(content_id, section_number)
     except ValueError as e:
         if "credentials" in str(e).lower() or "authentication" in str(e).lower() or "unauthorized" in str(e).lower():
             raise HTTPException(
@@ -422,11 +465,15 @@ async def get_section(
 async def get_scenes(
     content_id: UUID,
     section_number: int,
-    coordinator: GenerationCoordinator = Depends(get_generation_service)
+    content_service: ContentService = Depends(get_content_service)
 ):
     """Get all scenes for a section"""
     try:
-        return await coordinator.get_scenes(content_id, section_number)
+        # Get section first to validate it exists
+        section = await content_service.get_section_by_number(content_id, section_number)
+        
+        # Get scenes for the section
+        return await content_service.list_scenes(section.id)
     except ValueError as e:
         if "credentials" in str(e).lower() or "authentication" in str(e).lower() or "unauthorized" in str(e).lower():
             raise HTTPException(
@@ -451,33 +498,36 @@ async def update_scene(
     section_number: int,
     scene_number: int,
     request: SceneUpdateRequest,
-    db: AsyncSession = Depends(get_db),
-    coordinator: GenerationCoordinator = Depends(get_generation_service)
+    content_service: ContentService = Depends(get_content_service)
 ):
     """Update scene details"""
     try:
-        # Get scene record
-        scene = await coordinator._get_scene(content_id, section_number, scene_number)
+        # Get section first to validate it exists
+        section = await content_service.get_section_by_number(content_id, section_number)
         
-        # Update fields if provided
+        # Get scene by number
+        scene = await content_service.get_scene_by_number(section.id, scene_number)
+        
+        # Prepare update data
+        update_data = {}
         if request.heading is not None:
-            scene.heading = request.heading
+            update_data["heading"] = request.heading
         if request.setting is not None:
-            scene.setting = request.setting
+            update_data["setting"] = request.setting
         if request.characters is not None:
-            scene.characters = str(request.characters)
+            update_data["characters"] = str(request.characters)
         if request.key_events is not None:
-            scene.key_events = request.key_events
+            update_data["key_events"] = request.key_events
         if request.emotional_tone is not None:
-            scene.emotional_tone = request.emotional_tone
+            update_data["emotional_tone"] = request.emotional_tone
         if request.content is not None:
-            scene.content = request.content
+            update_data["content"] = request.content
         
-        # Save changes
-        await db.commit()
+        # Update scene
+        updated_scene = await content_service.update_scene(scene.id, update_data)
         
         # Return updated scene
-        return await coordinator.get_scene(content_id, section_number, scene_number)
+        return updated_scene
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -495,11 +545,15 @@ async def get_scene(
     content_id: UUID,
     section_number: int,
     scene_number: int,
-    coordinator: GenerationCoordinator = Depends(get_generation_service)
+    content_service: ContentService = Depends(get_content_service)
 ):
     """Get specific scene by number"""
     try:
-        return await coordinator.get_scene(content_id, section_number, scene_number)
+        # Get section first to validate it exists
+        section = await content_service.get_section_by_number(content_id, section_number)
+        
+        # Get scene by number
+        return await content_service.get_scene_by_number(section.id, scene_number)
     except ValueError as e:
         if "credentials" in str(e).lower() or "authentication" in str(e).lower() or "unauthorized" in str(e).lower():
             raise HTTPException(
@@ -515,4 +569,90 @@ async def get_scene(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving scene: {str(e)}"
+        )
+
+@router.post("/content/{content_id}/stream-outline")
+async def stream_outline(
+    content_id: UUID,
+    content_service: ContentService = Depends(get_content_service),
+    generation_service: GenerationService = Depends(get_generation_service)
+):
+    """Stream outline generation for content"""
+    try:
+        # Get content record
+        content = await content_service.get_content(content_id)
+        if not content:
+            raise HTTPException(status_code=404, detail="Content not found")
+        
+        # Update status to processing
+        await content_service.update_content(content_id, {"status": ContentStatus.PROCESSING})
+        
+        # Get LLM service
+        llm_service = generation_service.llm_service
+        
+        async def stream_generator():
+            try:
+                # Format for SSE (Server-Sent Events)
+                yield "data: {\"status\": \"started\"}\n\n"
+                
+                # Stream the outline generation
+                outline_text = ""
+                async for chunk in llm_service.stream_outline(
+                    description=content.description,
+                    style=content.style,
+                    sections_count=content.sections_count
+                ):
+                    outline_text += chunk
+                    yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+                
+                # Try to parse the JSON response
+                try:
+                    outline_data = json.loads(outline_text)
+                    
+                    # Update content with outline data
+                    update_data = {
+                        "title": outline_data.get('title', 'Untitled'),
+                        "outline": outline_data.get('outline', ''),
+                        "status": ContentStatus.COMPLETED
+                    }
+                    await content_service.update_content(content_id, update_data)
+                    
+                    # Send completion message
+                    yield f"data: {json.dumps({'status': 'completed', 'title': update_data['title']})}\n\n"
+                except json.JSONDecodeError:
+                    # If we can't parse the JSON, just store the raw text
+                    update_data = {
+                        "outline": outline_text,
+                        "status": ContentStatus.COMPLETED
+                    }
+                    await content_service.update_content(content_id, update_data)
+                    
+                    # Send completion message
+                    yield f"data: {json.dumps({'status': 'completed', 'note': 'Could not parse JSON response'})}\n\n"
+                
+                yield "data: [DONE]\n\n"
+            except Exception as e:
+                # Update status to failed
+                await content_service.update_content(content_id, {
+                    "status": ContentStatus.FAILED,
+                    "error": str(e)
+                })
+                
+                # Send error message
+                yield f"data: {json.dumps({'status': 'error', 'message': str(e)})}\n\n"
+                yield "data: [DONE]\n\n"
+        
+        return StreamingResponse(
+            stream_generator(),
+            media_type="text/event-stream"
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Content not found"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error streaming outline: {str(e)}"
         )

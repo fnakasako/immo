@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 
 from app.core.database import Base
-from app.models.enums import GenerationStatus, SectionStatus, SceneStatus
+from app.models.enums import GenerationStatus, SectionStatus, SceneStatus, ContentStatus
 
 class ContentGenerationRecord(Base):
     __tablename__ = "content_generations"
@@ -16,6 +16,7 @@ class ContentGenerationRecord(Base):
     sections_count = Column(Integer, nullable=False, default=5)
     style = Column(String, nullable=True)
     status = Column(Enum(GenerationStatus), nullable=False, default=GenerationStatus.PENDING)
+    new_status = Column(Enum(ContentStatus), nullable=True, default=ContentStatus.PENDING)
     title = Column(String, nullable=True)
     outline = Column(Text, nullable=True)
     error = Column(Text, nullable=True)
@@ -40,6 +41,7 @@ class Section(Base):
     summary = Column(Text, nullable=True)
     style_description = Column(Text, nullable=True)
     status = Column(Enum(SectionStatus), nullable=False, default=SectionStatus.PENDING)
+    new_status = Column(Enum(ContentStatus), nullable=True, default=ContentStatus.PENDING)
     error = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -61,6 +63,7 @@ class Scene(Base):
     emotional_tone = Column(String, nullable=True)
     content = Column(Text, nullable=True)  # The generated prose
     status = Column(Enum(SceneStatus), nullable=False, default=SceneStatus.PENDING)
+    new_status = Column(Enum(ContentStatus), nullable=True, default=ContentStatus.PENDING)
     error = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
